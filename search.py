@@ -109,7 +109,7 @@ def apply_action(state: State, action: str) -> State:
 
             # Deal cards
             used = set(state.community_card) | set(state.holes[0]) | set(state.holes[1])
-            deck = [c for c in FULL_DECK if c not in used]
+            deck = [card for card in FULL_DECK if card not in used]
             count = 3 if state.stage == 1 else 1
             state.community_card.extend(random.sample(deck, count))
             state.raises = [0, 0] 
@@ -155,5 +155,4 @@ def minimax(state: State, depth: int, is_max: bool) -> Tuple[float, str]:
         else:
             if score < best_score:
                 best_score, best_action = score, action
-
     return best_score, best_action
