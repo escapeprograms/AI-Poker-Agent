@@ -4,6 +4,8 @@ from copy import deepcopy
 from typing import List, Tuple
 from math import inf
 
+from pypokerengine.utils.card_utils import estimate_hole_card_win_rate, gen_cards
+
 MAX_RAISES = 4
 RANKS = '23456789TJQKA'
 SUITS = 'CDHS'
@@ -12,6 +14,7 @@ FULL_DECK = [f"{suit}{rank}" for suit in SUITS for rank in RANKS]
 class State:
     def __init__(self, hole_card, round_state):
         # Easily extractable state
+        self.maxer = round_state["next_player"]
         self.player = round_state["next_player"]
         self.community_card = round_state["community_card"]
         self.pot = round_state["pot"]["main"]["amount"]
@@ -111,6 +114,7 @@ def apply_action(state: State, action: str) -> State:
             state.community_card.extend(random.sample(deck, count))
             state.raises = [0, 0] 
         else:
+            # TODO: need to compare hands here and give pot to winner
             state.terminal = True
             return state
 
@@ -118,9 +122,25 @@ def apply_action(state: State, action: str) -> State:
     state.player = 1 - state.player
     return state
 
+def evaluate(state: State) -> float:
+    maxer_win_rate = estimate_hole_card_win_rate(
+        nb_simulation = 100,
+        nb_player = 2,
+        hole_card = gen_cards(state.holes[state.maxer]),
+        community_card = gen_cards(state.community_card)
+    )
+
+    # TODO: fix this, it's not right
+    return state.stacks[state.maxer] \
+        + maxer_win_rate * (state.pot + state.to_call) \
+        - (1 - maxer_win_rate) * state.to_call
+
 def minimax(state: State, depth: int, is_max: bool) -> Tuple[float, str]:
-    if state.terminal or depth == 0:
-        return state.stacks[0] - state.stacks[1], None
+    if state.terminal:
+        return state.stacks[state.maxer] - state.stacks[1 - state.maxer], None
+    
+    if depth == 0:
+        return evaluate(state), None
 
     best_score = -inf if is_max else inf
     best_action = None
