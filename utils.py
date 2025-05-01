@@ -24,9 +24,9 @@ def example_policy(hand: list[str], community: list[str], pot: int) -> tuple[flo
 # expectedValue(policy, ['DA', 'DK'], ['C2', 'C7'], ['DJ', 'DT', 'D9', 'D2', 'C8'], 120, 0, {"callEnds": True, "p1Raises": 4, "p2Raises": 4, "phase": "river", "firstPlayer": 1, "p1Paid": 60})
 # expectedValue(policy, ['DA', 'DK'], ['C2', 'C7'], ['DJ', 'DT', 'D9', 'D2', 'C8'])
 
-# Expected value of the policy given the game state
+# Expected value given the two players' policies and the game state
 # If pot, callAmt, gameStateInfo are omitted, it assumes it's the beginning of the game (and p1 goes first)
-def expectedValue(policy, hand1: list[str], hand2: list[str], community: list[str], pot=30, callAmt=10, gameStateInfo: dict = None):
+def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], community: list[str], pot=30, callAmt=10, gameStateInfo: dict = None):
   if gameStateInfo is None:
     gameStateInfo = {
       "callEnds": False, # Whether calling ends the phase
@@ -37,12 +37,12 @@ def expectedValue(policy, hand1: list[str], hand2: list[str], community: list[st
       "firstPlayer": 1 # Whether p1 or p2 is the first player (goes first each phase)
     }
 
-  f, c, r = policy(hand1, community[:CARDS_REVEALED[gameStateInfo["phase"]]], pot) # Only give the revealed community cards
+  f, c, r = policy1(hand1, community[:CARDS_REVEALED[gameStateInfo["phase"]]], pot) # Only give the revealed community cards
 
   # Limit raise amount to 4
   if gameStateInfo["p1Raises"] >= 4:
     r = 0
-    f, c = (f/(f+c), c/(f+c)) if f+c > 0 else (1, 0)
+    f, c = (f/(f+c), c/(f+c)) if f+c > 0 else (0.5, 0.5)
   # print(f"p1Raises: {gameStateInfo['p1Raises']} | {f} {c} {r}")
   # Amount that can be won: round_state["pot"]["main"]["amount"]
   phase = gameStateInfo["phase"]
@@ -59,7 +59,7 @@ def expectedValue(policy, hand1: list[str], hand2: list[str], community: list[st
     newGameState["callEnds"] = True
     newGameState["firstPlayer"] = 3 - newGameState["firstPlayer"] # Switch
     newGameState["p1Paid"] = pot - newGameState["p1Paid"] # Amt that p2 has paid
-    rEV = -expectedValue(policy, hand2, hand1, community, pot+(callAmt + 20), 20, newGameState)
+    rEV = -expectedValue(policy2, policy1, hand2, hand1, community, pot+(callAmt + 20), 20, newGameState)
 
 
   # Calculate call expected value from future actions
@@ -68,7 +68,7 @@ def expectedValue(policy, hand1: list[str], hand2: list[str], community: list[st
     gameStateInfo["p1Raises"], gameStateInfo["p2Raises"] = gameStateInfo["p2Raises"], gameStateInfo["p1Raises"]
     gameStateInfo["firstPlayer"] = 3 - gameStateInfo["firstPlayer"] # Switch
     gameStateInfo["p1Paid"] = pot - gameStateInfo["p1Paid"] # Amt that p2 has paid
-    cEV = -expectedValue(policy, hand2, hand1, community, pot+callAmt, 0, gameStateInfo)
+    cEV = -expectedValue(policy2, policy1, hand2, hand1, community, pot+callAmt, 0, gameStateInfo)
   else:
     # Move on to the next phase
     if phase == "preflop":
@@ -83,12 +83,12 @@ def expectedValue(policy, hand1: list[str], hand2: list[str], community: list[st
       gameStateInfo["callEnds"] = False
       if gameStateInfo["firstPlayer"] == 1:
         gameStateInfo["p1Paid"] += callAmt
-        cEV = expectedValue(policy, hand1, hand2, community, pot+callAmt, 0, gameStateInfo)
+        cEV = expectedValue(policy1, policy2, hand1, hand2, community, pot+callAmt, 0, gameStateInfo)
       else:
         gameStateInfo["firstPlayer"] = 1
         gameStateInfo["p1Raises"], gameStateInfo["p2Raises"] = gameStateInfo["p2Raises"], gameStateInfo["p1Raises"]
         gameStateInfo["p1Paid"] = pot - gameStateInfo["p1Paid"]
-        cEV = -expectedValue(policy, hand2, hand1, community, pot+callAmt, 0, gameStateInfo)
+        cEV = -expectedValue(policy2, policy1, hand2, hand1, community, pot+callAmt, 0, gameStateInfo)
     else:
       # TODO: Compare hands to see who wins
       community = cardify(community)
