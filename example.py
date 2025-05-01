@@ -1,5 +1,5 @@
 from pypokerengine.api.game import setup_config, start_poker
-from agent.test_player import TestPlayer
+from test_player import TestPlayer
 from raise_player import RaisedPlayer
 from randomplayer import RandomPlayer
 
