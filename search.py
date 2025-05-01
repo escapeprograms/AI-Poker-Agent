@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import List, Tuple
 from math import inf
 
+from pypokerengine.engine.hand_evaluator import HandEvaluator
 from pypokerengine.utils.card_utils import estimate_hole_card_win_rate, gen_cards
 
 MAX_RAISES = 4
@@ -26,6 +27,7 @@ class State:
             round_state["seats"][1]["stack"]
         ] 
         self.terminal = False
+        self.winner = None
 
         # Setup holes
         self.holes = [None, None]
@@ -114,7 +116,14 @@ def apply_action(state: State, action: str) -> State:
             state.community_card.extend(random.sample(deck, count))
             state.raises = [0, 0] 
         else:
-            # TODO: need to compare hands here and give pot to winner
+            community = gen_cards(state.community_card)
+            if HandEvaluator.eval_hand(gen_cards(state.holes[state.player]), community) \
+            >= HandEvaluator.eval_hand(gen_cards(state.holes[1 - state.player]), community):
+                state.stacks[state.player] += state.pot
+                state.winner = state.player
+            else:
+                state.stacks[1 - state.player] += state.pot
+                state.winner = 1 - state.player
             state.terminal = True
             return state
 
@@ -131,9 +140,7 @@ def evaluate(state: State) -> float:
     )
 
     # TODO: fix this, it's not right
-    return state.stacks[state.maxer] \
-        + maxer_win_rate * (state.pot + state.to_call) \
-        - (1 - maxer_win_rate) * state.to_call
+    return maxer_win_rate * state.pot
 
 def minimax(state: State, depth: int, is_max: bool) -> Tuple[float, str]:
     if state.terminal:
