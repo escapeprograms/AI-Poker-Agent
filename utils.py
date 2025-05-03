@@ -9,6 +9,13 @@ CARDS_REVEALED = {
   "river": 5
 }
 
+RAISE_AMT = {
+  "preflop": 20,
+  "flop": 20,
+  "turn": 40,
+  "river": 40
+}
+
 # Convert a list of cards in string form to a list of cards in Card object form
 def cardify(cards: list[str]) -> list[Card]:
   return list(map(lambda card: Card.from_str(card), cards))
@@ -59,7 +66,7 @@ def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], communit
     newGameState["callEnds"] = True
     newGameState["firstPlayer"] = 3 - newGameState["firstPlayer"] # Switch
     newGameState["p1Paid"] = pot - newGameState["p1Paid"] # Amt that p2 has paid
-    rEV = -expectedValue(policy2, policy1, hand2, hand1, community, pot+(callAmt + 20), 20, newGameState)
+    rEV = -expectedValue(policy2, policy1, hand2, hand1, community, pot+(callAmt + RAISE_AMT[phase]), RAISE_AMT[phase], newGameState)
 
 
   # Calculate call expected value from future actions
