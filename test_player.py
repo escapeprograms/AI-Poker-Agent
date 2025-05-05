@@ -1,26 +1,32 @@
-from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
 import pprint
-from search import State, minimax
+
 from pypokerengine.players import BasePokerPlayer
+from search import minimax
+from pypokerengine.api.emulator import Emulator
+from pypokerengine.utils.card_utils import gen_cards
+from pypokerengine.utils.game_state_utils import attach_hole_card, attach_hole_card_from_deck, restore_game_state
 
 pp = pprint.PrettyPrinter(indent=2)
 
-def sample(args):
-    hole_card, round_state, depth = args
-    state = State(hole_card, round_state)
-    _, best_move = minimax(state, depth, is_max=True)
-    return best_move
-
 class TestPlayer(BasePokerPlayer):       
-    def declare_action(self, valid_actions, hole_card, round_state):    
-        samples = 10
-        depth = 3
-        work = [(hole_card, round_state, depth) for _ in range(samples)]
-        with ThreadPoolExecutor() as pool:
-            moves = list(pool.map(sample, work))
-        move_votes = Counter(moves)
-        return move_votes.most_common(1)[0][0]
+
+    def declare_action(self, valid_actions, hole_card, round_state):
+        # Get agent's UUID
+        seat = round_state["next_player"]
+        uuid = round_state["seats"][seat]["uuid"]
+
+        print(valid_actions)
+
+        # Clone game state
+        game_state = restore_game_state(round_state)            
+        game_state = attach_hole_card(game_state, uuid, gen_cards(hole_card))
+        for seat in round_state["seats"]:
+            if seat["uuid"] != uuid:
+                # Generate random hole cards
+                game_state = attach_hole_card_from_deck(game_state, seat["uuid"])
+
+        # Determine best action
+        return minimax(game_state, 2, True)[1]["action"]
 
     def receive_game_start_message(self, game_info): pass
     def receive_round_start_message(self, round_count, hole_card, seats): pass
