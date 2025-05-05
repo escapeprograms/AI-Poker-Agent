@@ -14,11 +14,13 @@ class TestPlayer(BasePokerPlayer):
         seat = round_state["next_player"]
         uuid = round_state["seats"][seat]["uuid"]
 
-        # TODO: use cheat deck in table constructor to control which cards get dealt?
-
         # Clone known game state
         game_state = restore_game_state(round_state)            
         game_state = attach_hole_card(game_state, uuid, gen_cards(hole_card))
+
+        # Remove hole cards from deck
+        for card in gen_cards(hole_card):
+            game_state["table"].deck.deck.remove(card)
 
         # Generate random hole cards for opponents
         for seat in round_state["seats"]:

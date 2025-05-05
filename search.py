@@ -14,7 +14,7 @@ def minimax(game_state, event, depth, is_max):
         return 1, None
     
     if depth == 0:
-        # TODO: call evaluation function or
+        # TODO: call evaluation function
         return 1, None
 
     # Generate legal actions at current state
