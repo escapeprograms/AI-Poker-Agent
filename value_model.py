@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class CardEmbedding(nn.Module):
     def __init__(self, embedding_dim=64):
         super(CardEmbedding, self).__init__()
-
+        
         # Define the suits and ranks
         self.suits = ['C', 'D', 'H', 'S']  # Clubs, Diamonds, Hearts, Spades
         self.ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
@@ -24,12 +26,13 @@ class CardEmbedding(nn.Module):
         self.rank_to_index = {rank: i for i, rank in enumerate(self.ranks)}
 
     def forward(self, cards):
+        print("in",cards)
         suit_indices = []
         rank_indices = []
         card_indices = []
         for card in cards:
-            rank_str = card[1]
-            suit_str = card[0]
+            rank_str = str(card)[1]
+            suit_str = str(card)[0]
             card_ind = self.suit_to_index[suit_str]*13 + self.rank_to_index[rank_str]
 
             if suit_str not in self.suits or rank_str not in self.ranks:
@@ -53,6 +56,8 @@ class CardEmbedding(nn.Module):
 #building block w/ skip connection and relu activation
 class SkipRelu(nn.Module):
     def __init__(self, hidden_size):
+        super(SkipRelu, self).__init__()
+
         self.hidden_size = hidden_size
         self.lin = nn.Linear(hidden_size, hidden_size)
         self.relu = nn.ReLU()
@@ -66,6 +71,8 @@ class SkipRelu(nn.Module):
 
 class ValueNetwork(nn.Module):
     def __init__(self, embedding_dim = 64, hidden_size = 192):
+        super(ValueNetwork, self).__init__()
+
         self.hidden_size = hidden_size
         self.embedding_dim = embedding_dim
         self.card_embedder = CardEmbedding(self.embedding_dim)
@@ -92,40 +99,44 @@ class ValueNetwork(nn.Module):
         hand = self.lin_skip_small(hand_embedding)
         board = self.lin_skip_small(board_embedding)
 
-        cards_layer = torch.cat(hand, board)
+        cards_layer = torch.cat((hand, board))
         cards_layer = self.merge_cards(cards_layer)
         cards_layer = self.relu(cards_layer)
 
         cards_layer = self.lin_skip_large(cards_layer)
-        cards_layer = self.lin_skip_large(cards_layer)
+        # cards_layer = self.lin_skip_large(cards_layer)
         cards_layer = self.shrink_cards(cards_layer)
         cards_layer = self.relu(cards_layer)
 
         #bets/actions portion of the network
-        actions = round_state['action_histories']
+        actions = round_state['action_histories'] #dictionary with keys ["preflop","flop","turn","river"]
         streets = ["preflop","flop","turn","river"]
         
         actions_occured = [0 for i in range(6*len(streets))] #maximum 6 bets per segment x 4 streets = 24 dim size
         bet_sizes = [0 for i in range(6*len(streets))]
-        for i in range(len(streets)):
+        for i in range(len(actions)):
             street_actions = actions[streets[i]]
             for j in range(len(street_actions)):
                 actions_occured[6*i + j] = 1 #show that this bet has actually happened
-                bet_sizes[6*i + j] = street_actions[j]['add_amount'] #get the new amount added to the pot
+                # print("STREET ACTION", street_actions[j])
+                if street_actions[j]['action'] in ["FOLD","SMALLBLIND","BIGBLIND"]:
+                    bet_sizes[6*i + j] = 0
+                    continue
+                bet_sizes[6*i + j] = street_actions[j]['paid'] #get the new amount added to the pot
 
-        actions_occured = torch.tensor(actions_occured, dtype=torch.long)
-        bet_sizes = torch.tensor(bet_sizes, dtype=torch.long)
-        bets_layer = torch.cat(actions_occured, bet_sizes) #24+24=48 dim size
+        actions_occured = torch.tensor(actions_occured, dtype=torch.float)
+        bet_sizes = torch.tensor(bet_sizes, dtype=torch.float)
+        bets_layer = torch.cat((actions_occured, bet_sizes)) #24+24=48 dim size
 
         bets_layer = self.encode_bets(bets_layer)
         bets_layer = self.relu(bets_layer)
         bets_layer = self.lin_skip_small(bets_layer)
 
         #combine
-        main_layer = torch.cat(cards_layer, bets_layer)
-        main_layer = self.merge_cards(main_layer)
+        main_layer = torch.cat((cards_layer, bets_layer)) #2 * small layer
+        main_layer = self.merge_main(main_layer)
         main_layer = self.lin_skip_small(main_layer)
-        main_layer = self.lin_skip_small(main_layer)
+        # main_layer = self.lin_skip_small(main_layer)
         main_layer = self.lin_final(main_layer)
         return main_layer #return a single value
         

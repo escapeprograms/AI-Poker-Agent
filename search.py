@@ -7,15 +7,22 @@ from pypokerengine.engine.action_checker import ActionChecker
 
 pp = pprint.PrettyPrinter(indent=2)
 
-def minimax(game_state, events, depth, is_max):
+def minimax(game_state, events, depth, is_max, value_network):
+
     if (game_state["street"] == Const.Street.FINISHED):
         # events[-1][1]["message"]["winners"] stores winner
-        return 1, None
+        round_state = events[-1][1]["message"]["round_state"]
+        # print("round state:", round_state)
+        hole_card = game_state['table'].seats.players[0 if is_max else 1].hole_card
+        return value_network(hole_card, round_state), None
     
     if depth == 0:
         # TODO: call evaluation function
         # events[-1][1]["message"]["round_state"] always exists (I think)
-        return 1, None
+        round_state = events[-1][1]["message"]["round_state"]
+        # print("round state:", round_state)
+        hole_card = game_state['table'].seats.players[0 if is_max else 1].hole_card
+        return value_network(hole_card, round_state), None
 
     # Generate legal actions at current state
     actions = ActionChecker.legal_actions(
@@ -29,8 +36,8 @@ def minimax(game_state, events, depth, is_max):
     top_score = -inf if is_max else inf
     top_action = None
     for action in actions:
-        next_state, events = RoundManager.apply_action(game_state, action["action"])   
-        score, _ = minimax(next_state, events, depth - 1, not is_max)
+        next_state, events = RoundManager.apply_action(game_state, action["action"])
+        score, _ = minimax(next_state, events, depth - 1, not is_max, value_network)
         if (is_max and score > top_score) or (not is_max and score < top_score):
             top_score, top_action = score, action
 

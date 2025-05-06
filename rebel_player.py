@@ -14,16 +14,8 @@ class RebelPlayer(BasePokerPlayer):
         
         return []
     
-    def build_tree(self, policy, hole_card, round_state):
-        # policy = [0.33,0.33,0.34]
-        root = Node(0)
-        for i in ["fold","call","raise"]:
-            #update the round state
-
-            root.children.append(self.build_tree(policy, hole_card, round_state))
-        return root
-    
     def declare_action(self, valid_actions, hole_card, round_state):
+        # minimax(round_state)
         for i in valid_actions:
             if i["action"] == "raise":
                 action = i["action"]

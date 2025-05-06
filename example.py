@@ -1,11 +1,14 @@
 from pypokerengine.api.game import setup_config, start_poker
-from test_player import TestPlayer
+from minimax_player import MinimaxPlayer
 from raise_player import RaisedPlayer
 from randomplayer import RandomPlayer
+from value_model import CardEmbedding, ValueNetwork
 
 config = setup_config(max_round=1, initial_stack=10000, small_blind_amount=10)
 
-config.register_player(name="Eric", algorithm=TestPlayer())
+evaluation_function = ValueNetwork()
+
+config.register_player(name="Eric", algorithm=MinimaxPlayer(evaluation_function))
 config.register_player(name="Evil", algorithm=RaisedPlayer())
 
 game_result = start_poker(config, verbose=1)
