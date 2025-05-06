@@ -24,7 +24,7 @@ def cardify(cards: list[str]) -> list[Card]:
 # Example policy
 # Note that community may be an empty list if it is the preflop phase
 # Should return a probability distribution of the form (foldProb, callProb, raiseProb)
-def example_policy(hand: list[str], community: list[str], pot: int) -> tuple[float, float, float]:
+def example_policy(hand: list[str], community: list[str], pot: int, canRaise: bool) -> tuple[float, float, float]:
   return (1/3, 1/3, 1/3) # foldProb, callProb, raiseProb
 
 # Sample usage
@@ -34,7 +34,7 @@ def example_policy(hand: list[str], community: list[str], pot: int) -> tuple[flo
 # Expected value given the two players' policies and the game state
 # If pot, callAmt, gameStateInfo are omitted, it assumes it's the beginning of the game (and p1 goes first)
 # Returns (expected_value, fold_expected_value, c_expected_value, r_expected_value)
-def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], community: list[str], pot=30, callAmt=10, gameStateInfo: dict = None) -> tuple[float, float, float, float]: 
+def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], community: list[str], pot=30, callAmt=10, gameStateInfo: dict = None, fullStats=False) -> tuple[float, float, float, float]: 
   if gameStateInfo is None:
     gameStateInfo = {
       "callEnds": False, # Whether calling ends the phase
@@ -45,11 +45,12 @@ def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], communit
       "phase": "preflop", # "preflop" or "flop" or "turn" or "river"
       "firstPlayer": 1 # Whether p1 or p2 is the first player (goes first each phase)
     }
-
-  f, c, r = policy1(hand1, community[:CARDS_REVEALED[gameStateInfo["phase"]]], pot) # Only give the revealed community cards
+  
+  canRaise = not (gameStateInfo["p1Raises"] >= 4 or gameStateInfo["phaseRaises"] >= 4)
+  f, c, r = policy1(hand1, community[:CARDS_REVEALED[gameStateInfo["phase"]]], pot, canRaise) # Only give the revealed community cards
 
   # Limit raise amount to 4
-  if gameStateInfo["p1Raises"] >= 4 or gameStateInfo["phaseRaises"] >= 4:
+  if not canRaise:
     r = 0
     f, c = (f/(f+c), c/(f+c)) if f+c > 0 else (0.5, 0.5)
   # print(f"p1Raises: {gameStateInfo['p1Raises']} | {f} {c} {r}")
@@ -115,4 +116,4 @@ def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], communit
         cEV = (pot if p1Score > p2Score else 0) - gameStateInfo["p1Paid"] # Pot winnings (if any) minus what you paid    
   
   # EV, fEV, cEV, rEV
-  return f*fEV + c*cEV + r*rEV, fEV, cEV, rEV
+  return (f*fEV + c*cEV + r*rEV, fEV, cEV, rEV) if fullStats else f*fEV + c*cEV + r*rEV
