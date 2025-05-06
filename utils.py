@@ -33,7 +33,8 @@ def example_policy(hand: list[str], community: list[str], pot: int) -> tuple[flo
 
 # Expected value given the two players' policies and the game state
 # If pot, callAmt, gameStateInfo are omitted, it assumes it's the beginning of the game (and p1 goes first)
-def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], community: list[str], pot=30, callAmt=10, gameStateInfo: dict = None):
+# Returns (expected_value, fold_expected_value, c_expected_value, r_expected_value)
+def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], community: list[str], pot=30, callAmt=10, gameStateInfo: dict = None) -> tuple[float, float, float, float]: 
   if gameStateInfo is None:
     gameStateInfo = {
       "callEnds": False, # Whether calling ends the phase
@@ -100,7 +101,7 @@ def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], communit
         gameStateInfo["p1Paid"] = pot - gameStateInfo["p1Paid"]
         cEV = -expectedValue(policy2, policy1, hand2, hand1, community, pot+callAmt, 0, gameStateInfo)
     else:
-      # TODO: Compare hands to see who wins
+      # Compare hands to see who wins
       community = cardify(community)
       hand1 = cardify(hand1)
       hand2 = cardify(hand2)
@@ -113,4 +114,5 @@ def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], communit
       else:
         cEV = (pot if p1Score > p2Score else 0) - gameStateInfo["p1Paid"] # Pot winnings (if any) minus what you paid    
   
-  return f*fEV + c*cEV + r*rEV
+  # EV, fEV, cEV, rEV
+  return f*fEV + c*cEV + r*rEV, fEV, cEV, rEV
