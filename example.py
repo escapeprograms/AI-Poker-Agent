@@ -9,3 +9,13 @@ config.register_player(name="Eric", algorithm=TestPlayer())
 config.register_player(name="Evil", algorithm=RaisedPlayer())
 
 game_result = start_poker(config, verbose=1)
+
+print(game_result)
+
+
+#raise limitations: each player can only raise 4 times in total, and there can only be 4 raises in a street
+
+print(game_result)
+
+
+#raise limitations: each player can only raise 4 times in total, and there can only be 4 raises in a street

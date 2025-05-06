@@ -75,14 +75,14 @@ def timeout(seconds=None, use_signals=True, timeout_exception=TimeoutError, exce
             def new_function(*args, **kwargs):
                 new_seconds = kwargs.pop('timeout', seconds)
                 if new_seconds:
-                    old = signal.signal(signal.SIGALRM, handler)
+                    old = signal.signal(signal.SIGABRT, handler)
                     signal.setitimer(signal.ITIMER_REAL, new_seconds)
                 try:
                     return function(*args, **kwargs)
                 finally:
                     if new_seconds:
                         signal.setitimer(signal.ITIMER_REAL, 0)
-                        signal.signal(signal.SIGALRM, old)
+                        signal.signal(signal.SIGABRT, old)
             return new_function
         else:
             @wraps(function)
@@ -114,7 +114,7 @@ def timeout2(seconds=None, defaultretval="Blah",exception_message="[EXP]: Action
             new_seconds = kwargs.pop('timeout', seconds)
             if new_seconds:
                 # print("[EXP] : No-TimeOut")
-                old = signal.signal(signal.SIGALRM, handler)
+                old = signal.signal(signal.SIGABRT, handler)
                 signal.setitimer(signal.ITIMER_REAL, new_seconds)
             try:
                 return function(*args, **kwargs)
@@ -124,7 +124,7 @@ def timeout2(seconds=None, defaultretval="Blah",exception_message="[EXP]: Action
             finally:
                 if new_seconds:
                     signal.setitimer(signal.ITIMER_REAL, 0)
-                    signal.signal(signal.SIGALRM, old)
+                    signal.signal(signal.SIGABRT, old)
         return new_function
 
     return decorate
