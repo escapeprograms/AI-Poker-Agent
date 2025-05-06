@@ -7,14 +7,14 @@ from pypokerengine.engine.action_checker import ActionChecker
 
 pp = pprint.PrettyPrinter(indent=2)
 
-
-def minimax(game_state, event, depth, is_max):
+def minimax(game_state, events, depth, is_max):
     if (game_state["street"] == Const.Street.FINISHED):
-        # event[1]["message"]["winners"] store winner
+        # events[-1][1]["message"]["winners"] stores winner
         return 1, None
     
     if depth == 0:
         # TODO: call evaluation function
+        # events[-1][1]["message"]["round_state"] always exists (I think)
         return 1, None
 
     # Generate legal actions at current state
@@ -31,8 +31,6 @@ def minimax(game_state, event, depth, is_max):
     for action in actions:
         next_state, events = RoundManager.apply_action(game_state, action["action"])   
         score, _ = minimax(next_state, events, depth - 1, not is_max)
-
-        # Update if new best found
         if (is_max and score > top_score) or (not is_max and score < top_score):
             top_score, top_action = score, action
 

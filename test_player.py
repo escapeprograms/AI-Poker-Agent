@@ -27,7 +27,7 @@ class TestPlayer(BasePokerPlayer):
             if seat["uuid"] != uuid:
                 game_state = attach_hole_card_from_deck(game_state, seat["uuid"])
 
-        # Search for bes action
+        # Search for best action
         return minimax(game_state, None, 2, True)[1]["action"]
 
     def receive_game_start_message(self, game_info): pass
