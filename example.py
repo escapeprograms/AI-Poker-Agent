@@ -6,7 +6,7 @@ from rebel_player import RebelPlayer
 from value_model import CardEmbedding, ValueNetwork
 import torch
 
-config = setup_config(max_round=1, initial_stack=10000, small_blind_amount=10)
+config = setup_config(max_round=10, initial_stack=10000, small_blind_amount=10)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -16,17 +16,17 @@ with torch.no_grad():
     evaluation_function.to(device)
     evaluation_function.eval()
 
-    config.register_player(name="Eric", algorithm=MinimaxPlayer(evaluation_function))
-    config.register_player(name="Evil", algorithm=MinimaxPlayer(evaluation_function))
+    config.register_player(name="Eric", algorithm=MinimaxPlayer(evaluation_function, print_stuff=True))
+    config.register_player(name="Evil", algorithm=RandomPlayer())
 
     game_result = start_poker(config, verbose=1)
 
-print(game_result)
+# print(game_result)
 
 
 #raise limitations: each player can only raise 4 times in total, and there can only be 4 raises in a street
 
-print(game_result)
+# print(game_result)
 
 
 #raise limitations: each player can only raise 4 times in total, and there can only be 4 raises in a street

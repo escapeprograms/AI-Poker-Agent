@@ -1,3 +1,5 @@
+#SUBMISSION CODE: minimax
+
 import pprint
 
 from pypokerengine.players import BasePokerPlayer
@@ -13,7 +15,7 @@ from math import inf
 
 pp = pprint.PrettyPrinter(indent=2)
 
-class MinimaxPlayer(BasePokerPlayer):       
+class CustomPlayer(BasePokerPlayer):       
     def __init__(self, value_network, print_stuff=False, explore_chance=0):
         super().__init__()
         self.value_network = value_network
@@ -152,4 +154,4 @@ class MinimaxPlayer(BasePokerPlayer):
         self.hole_card = []
 
 def setup_ai():
-    return MinimaxPlayer()
+    return CustomPlayer()
