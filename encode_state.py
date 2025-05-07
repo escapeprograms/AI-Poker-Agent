@@ -20,7 +20,7 @@ def encode_card(card):
     #return all indices +1 (the 0 index represents an empty)
     return suit_to_index[suit_str]+1, rank_to_index[rank_str]+1, card_ind+1
 
-def encode_bet(round_state):
+def encode_bet(round_state, uuid):
     actions = round_state['action_histories'] #dictionary with keys ["preflop","flop","turn","river"]
     streets = ["preflop","flop","turn","river"]
     
@@ -34,11 +34,15 @@ def encode_bet(round_state):
             if street_actions[j]['action'] in ["FOLD","SMALLBLIND","BIGBLIND"]:
                 bet_sizes[6*i + j] = 0
                 continue
+
+            #only record opponent bets
+            if street_actions[j]['uuid'] == uuid:
+                continue
             bet_sizes[6*i + j] = street_actions[j]['paid'] #get the new amount added to the pot
     
     return actions_occured, bet_sizes
 
-def encode_game_state(hole_card, round_state):
+def encode_game_state(hole_card, round_state, uuid):
     #store hoel cards (0 if no card in this slot)
     hole_suit = [0 for i in range(2)]
     hole_rank = [0 for i in range(2)]
@@ -54,7 +58,7 @@ def encode_game_state(hole_card, round_state):
         board_suit[i], board_rank[i], board_card_idx[i] = encode_card(card)
 
     #store bets
-    actions_occured, bet_sizes = encode_bet(round_state)
+    actions_occured, bet_sizes = encode_bet(round_state, uuid)
     # hole_suit = torch.tensor(hole_suit, dtype=torch.int64)
     # hole_rank = torch.tensor(hole_rank, dtype=torch.int64)
     # hole_card_idx = torch.tensor(hole_card_idx, dtype=torch.int64)

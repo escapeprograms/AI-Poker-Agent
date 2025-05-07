@@ -70,6 +70,7 @@ class ValueNetwork(nn.Module):
 
         self.encode_bets = nn.Linear(48, self.embedding_dim)
 
+        self.layer_norm = nn.LayerNorm(self.embedding_dim)
         self.merge_main = nn.Linear(self.embedding_dim*2, self.embedding_dim)
 
         self.lin_final = nn.Linear(self.embedding_dim, 1)
@@ -108,9 +109,9 @@ class ValueNetwork(nn.Module):
         main_layer = torch.cat((cards_layer, bets_layer), dim=-1) #2 * small layer
         main_layer = self.merge_main(main_layer)
         main_layer = self.lin_skip_small(main_layer)
-        # main_layer = self.lin_skip_small(main_layer)
+        main_layer = self.layer_norm(main_layer)
+        main_layer = self.lin_skip_small(main_layer)
         main_layer = self.lin_final(main_layer)
-        main_layer = torch.tanh(main_layer)
         return main_layer #return a single value
         
 

@@ -36,8 +36,8 @@ class MinimaxPlayer(BasePokerPlayer):
             winners = events[-1][1]["message"]["winners"]
             for winner in winners:
                 if winner["uuid"] == self.uuid:
-                    return max_multiplier, None
-            return max_multiplier, None
+                    return self.pot * max_multiplier, None
+            return -self.pot * max_multiplier, None
 
         #maximum depth reached
         if depth == 0:
@@ -45,7 +45,7 @@ class MinimaxPlayer(BasePokerPlayer):
             round_state = events[-1][1]["message"]["round_state"]
             # print("round state:", round_state)
             hole_card = game_state['table'].seats.players[0 if is_max else 1].hole_card
-            val = value_network(*encode_game_state(hole_card, round_state))
+            val = value_network(*encode_game_state(hole_card, round_state, self.uuid))
             # print(val, str(hole_card[0]), str(hole_card[1]))
             return val * max_multiplier, None
         
@@ -113,12 +113,12 @@ class MinimaxPlayer(BasePokerPlayer):
     def receive_game_update_message(self, action, round_state): pass
     def receive_round_result_message(self, winners, hand_info, round_state):
         #after each round, store training data containing the hole cards, a partial state, and the value (money won/lost)
-        value = (1 if winners[0]['uuid'] == self.uuid else -1)
+        value = self.pot * (1 if winners[0]['uuid'] == self.uuid else -1)
         # print("VALUE", value, "WINNER", winners[0]['uuid'])
         # Store multiple training data
         for state in self.cur_round_states:
             #store each aspect of the state
-            hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes = encode_game_state(self.hole_card, state)
+            hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes = encode_game_state(self.hole_card, state, self.uuid)
             self.train_embedded_state[0].append(hole_suit)
             self.train_embedded_state[1].append(hole_rank)
             self.train_embedded_state[2].append(hole_card_idx)

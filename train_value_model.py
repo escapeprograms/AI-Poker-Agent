@@ -22,7 +22,7 @@ def simulate(evaluation_function, num_rounds=3200):
     config.register_player(name="Eric", algorithm=p1)
     config.register_player(name="Evil", algorithm=p2)
 
-    game_result = start_poker(config, verbose=1)
+    game_result = start_poker(config, verbose=0)
     #extract training data from both players
     hole_suit1, hole_rank1, hole_card_idx1, board_suit1, board_rank1, board_card_idx1, actions_occured1, bet_sizes1 = p1.train_embedded_state
     hole_suit2, hole_rank2, hole_card_idx2, board_suit2, board_rank2, board_card_idx2, actions_occured2, bet_sizes2 = p2.train_embedded_state
@@ -95,7 +95,7 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
 
 #Run self-play to gather data, then train the value function
 for j in range(10):
-    state = simulate(evaluation_function, num_rounds = 3200)
+    state = simulate(evaluation_function, num_rounds = 320)
     train_loop(*state, evaluation_function, num_epochs=num_epochs, batch_size=batch_size)
     evaluation_function.eval()
 
