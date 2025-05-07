@@ -9,14 +9,26 @@ from encode_state import encode_game_state
 pp = pprint.PrettyPrinter(indent=2)
 
 def minimax(game_state, events, depth, is_max, value_network):
-    
-    if (game_state["street"] == Const.Street.FINISHED) or depth == 0:
+    print(game_state)
+    if (game_state["street"] == Const.Street.FINISHED):
+        print("FINISHED")
+        winners = events[-1][1]["message"]["winners"]
+        for winner in winners:
+            print(is_max)
+            if winner["uuid"] == game_state["table"].seats.players[1-game_state["next_player"]].uuid:
+                return 60, None
+        return -60, None
+        #TODO: replace all 60 with the pot of the round
+    if depth == 0:
+        print("DEPTH 0")
         # events[-1][1]["message"]["winners"] stores winner
         round_state = events[-1][1]["message"]["round_state"]
         # print("round state:", round_state)
         hole_card = game_state['table'].seats.players[0 if is_max else 1].hole_card
         val = value_network(*encode_game_state(hole_card, round_state))
-        # print(val)
+        if len(hole_card) > 0:
+            print(str(hole_card[0]), str(hole_card[1]))
+        print(val)
         return val, None
     
 
@@ -29,7 +41,7 @@ def minimax(game_state, events, depth, is_max, value_network):
     )
 
     #test: remove fold from actions
-    actions = [action for action in actions if action["action"] != "fold"]
+    # actions = [action for action in actions if action["action"] != "fold"]
     # Search actions recursively
     top_score = -inf if is_max else inf
     top_action = None
@@ -38,8 +50,11 @@ def minimax(game_state, events, depth, is_max, value_network):
         score, _ = minimax(next_state, events, depth - 1, not is_max, value_network)
         if (is_max and score > top_score) or (not is_max and score < top_score):
             top_score, top_action = score, action
-
+        print(score,action)
     return top_score, top_action
+
+
+
 
 # Change timeout2 call in pypokerengine/api/game to use this
 def manual_walk(game_state, event=None):

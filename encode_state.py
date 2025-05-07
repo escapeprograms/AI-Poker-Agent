@@ -1,3 +1,4 @@
+import torch
 def encode_card(card):
     suits = ['C', 'D', 'H', 'S']  # Clubs, Diamonds, Hearts, Spades
     ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
@@ -54,5 +55,12 @@ def encode_game_state(hole_card, round_state):
 
     #store bets
     actions_occured, bet_sizes = encode_bet(round_state)
-
+    # hole_suit = torch.tensor(hole_suit, dtype=torch.int64)
+    # hole_rank = torch.tensor(hole_rank, dtype=torch.int64)
+    # hole_card_idx = torch.tensor(hole_card_idx, dtype=torch.int64)
+    # board_suit = torch.tensor(board_suit, dtype=torch.int64)
+    # board_rank = torch.tensor(board_rank, dtype=torch.int64)
+    # board_card_idx = torch.tensor(board_card_idx, dtype=torch.int64)
+    # actions_occured = torch.tensor(actions_occured, dtype=torch.int64)
+    # bet_sizes = torch.tensor(bet_sizes, dtype=torch.float32)
     return hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes

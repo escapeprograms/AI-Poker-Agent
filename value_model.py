@@ -24,10 +24,10 @@ class CardEmbedding(nn.Module):
         # Create mappings from card st
 
     def forward(self, suit_indices, rank_indices, card_indices):
-        
-        suit_indices = torch.tensor(suit_indices, dtype=torch.long)
-        rank_indices = torch.tensor(rank_indices, dtype=torch.long)
-        card_indices = torch.tensor(card_indices, dtype=torch.long)
+
+        suit_indices = torch.tensor(suit_indices, dtype=torch.long).to(device)
+        rank_indices = torch.tensor(rank_indices, dtype=torch.long).to(device)
+        card_indices = torch.tensor(card_indices, dtype=torch.long).to(device)
 
         suit_embedding = self.suit_embedding(suit_indices)
         rank_embedding = self.rank_embedding(rank_indices)
@@ -95,8 +95,8 @@ class ValueNetwork(nn.Module):
         cards_layer = self.relu(cards_layer)
 
         #bets/actions portion of the network
-        actions_occured = torch.tensor(actions_occured, dtype=torch.float)
-        bet_sizes = torch.tensor(bet_sizes, dtype=torch.float)
+        actions_occured = torch.tensor(actions_occured, dtype=torch.float).to(device)
+        bet_sizes = torch.tensor(bet_sizes, dtype=torch.float).to(device)
         bets_layer = torch.cat((actions_occured, bet_sizes), dim=-1) #24+24=48 dim size
 
         bets_layer = self.encode_bets(bets_layer)
@@ -110,6 +110,7 @@ class ValueNetwork(nn.Module):
         main_layer = self.lin_skip_small(main_layer)
         # main_layer = self.lin_skip_small(main_layer)
         main_layer = self.lin_final(main_layer)
+        main_layer = torch.tanh(main_layer)
         return main_layer #return a single value
         
 
