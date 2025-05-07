@@ -11,8 +11,8 @@ class CardEmbedding(nn.Module):
         self.suits = ['C', 'D', 'H', 'S']  # Clubs, Diamonds, Hearts, Spades
         self.ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
-        self.num_suits = len(self.suits)
-        self.num_ranks = len(self.ranks)
+        self.num_suits = len(self.suits) + 1 #add one for an empty dummy
+        self.num_ranks = len(self.ranks) + 1
         self.embedding_dim = embedding_dim
 
         # Embeddings for suit, rank, and individual card
@@ -21,27 +21,10 @@ class CardEmbedding(nn.Module):
         self.card_embedding = nn.Embedding(self.num_ranks*self.num_suits, embedding_dim)
 
 
-        # Create mappings from card strings to indices
-        self.suit_to_index = {suit: i for i, suit in enumerate(self.suits)}
-        self.rank_to_index = {rank: i for i, rank in enumerate(self.ranks)}
+        # Create mappings from card st
 
-    def forward(self, cards):
-        print("in",cards)
-        suit_indices = []
-        rank_indices = []
-        card_indices = []
-        for card in cards:
-            rank_str = str(card)[1]
-            suit_str = str(card)[0]
-            card_ind = self.suit_to_index[suit_str]*13 + self.rank_to_index[rank_str]
-
-            if suit_str not in self.suits or rank_str not in self.ranks:
-                raise ValueError(f"Invalid card string: {card}. "
-                                 f"Suits must be in {self.suits}, ranks in {self.ranks}.")
-            suit_indices.append(self.suit_to_index[suit_str])
-            rank_indices.append(self.rank_to_index[rank_str])
-            card_indices.append(card_ind)
-
+    def forward(self, suit_indices, rank_indices, card_indices):
+        
         suit_indices = torch.tensor(suit_indices, dtype=torch.long)
         rank_indices = torch.tensor(rank_indices, dtype=torch.long)
         card_indices = torch.tensor(card_indices, dtype=torch.long)
@@ -50,8 +33,8 @@ class CardEmbedding(nn.Module):
         rank_embedding = self.rank_embedding(rank_indices)
         card_embedding = self.card_embedding(card_indices)
         
-        final_embeddings = suit_embedding + rank_embedding + card_embedding
-        return torch.sum(final_embeddings, dim=0) #create an embedding for the hand by summing embeddings for the cards
+        final_embedding = suit_embedding + rank_embedding + card_embedding
+        return final_embedding
 
 #building block w/ skip connection and relu activation
 class SkipRelu(nn.Module):
@@ -91,15 +74,18 @@ class ValueNetwork(nn.Module):
 
         self.lin_final = nn.Linear(self.embedding_dim, 1)
 
-    def forward(self, hole, round_state): #takes in the inputs from the entire state
-        hand_embedding = self.card_embedder(hole) #hand cards
-        board_embedding = self.card_embedder(round_state['community_card']) #board cards
+    def forward(self, hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes): #takes in the inputs from the entire state
+        hand_embedding_all_cards = self.card_embedder(hole_suit, hole_rank, hole_card_idx) #hand cards
+        hand_embedding = torch.sum(hand_embedding_all_cards, dim=-2)
+
+        board_embedding_all_cards = self.card_embedder(board_suit, board_rank, board_card_idx) #board cards
+        board_embedding = torch.sum(board_embedding_all_cards, dim=-2)
         
         #card portion of the network
         hand = self.lin_skip_small(hand_embedding)
         board = self.lin_skip_small(board_embedding)
 
-        cards_layer = torch.cat((hand, board))
+        cards_layer = torch.cat((hand, board), dim=-1)
         cards_layer = self.merge_cards(cards_layer)
         cards_layer = self.relu(cards_layer)
 
@@ -109,31 +95,17 @@ class ValueNetwork(nn.Module):
         cards_layer = self.relu(cards_layer)
 
         #bets/actions portion of the network
-        actions = round_state['action_histories'] #dictionary with keys ["preflop","flop","turn","river"]
-        streets = ["preflop","flop","turn","river"]
-        
-        actions_occured = [0 for i in range(6*len(streets))] #maximum 6 bets per segment x 4 streets = 24 dim size
-        bet_sizes = [0 for i in range(6*len(streets))]
-        for i in range(len(actions)):
-            street_actions = actions[streets[i]]
-            for j in range(len(street_actions)):
-                actions_occured[6*i + j] = 1 #show that this bet has actually happened
-                # print("STREET ACTION", street_actions[j])
-                if street_actions[j]['action'] in ["FOLD","SMALLBLIND","BIGBLIND"]:
-                    bet_sizes[6*i + j] = 0
-                    continue
-                bet_sizes[6*i + j] = street_actions[j]['paid'] #get the new amount added to the pot
-
         actions_occured = torch.tensor(actions_occured, dtype=torch.float)
         bet_sizes = torch.tensor(bet_sizes, dtype=torch.float)
-        bets_layer = torch.cat((actions_occured, bet_sizes)) #24+24=48 dim size
+        bets_layer = torch.cat((actions_occured, bet_sizes), dim=-1) #24+24=48 dim size
 
         bets_layer = self.encode_bets(bets_layer)
         bets_layer = self.relu(bets_layer)
         bets_layer = self.lin_skip_small(bets_layer)
 
         #combine
-        main_layer = torch.cat((cards_layer, bets_layer)) #2 * small layer
+        # print("main size", main_layer.shape)
+        main_layer = torch.cat((cards_layer, bets_layer), dim=-1) #2 * small layer
         main_layer = self.merge_main(main_layer)
         main_layer = self.lin_skip_small(main_layer)
         # main_layer = self.lin_skip_small(main_layer)

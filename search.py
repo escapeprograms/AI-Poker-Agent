@@ -4,25 +4,21 @@ from math import inf
 from pypokerengine.engine.poker_constants import PokerConstants as Const
 from pypokerengine.engine.round_manager import RoundManager
 from pypokerengine.engine.action_checker import ActionChecker
+from encode_state import encode_game_state
 
 pp = pprint.PrettyPrinter(indent=2)
 
 def minimax(game_state, events, depth, is_max, value_network):
-
-    if (game_state["street"] == Const.Street.FINISHED):
+    
+    if (game_state["street"] == Const.Street.FINISHED) or depth == 0:
         # events[-1][1]["message"]["winners"] stores winner
         round_state = events[-1][1]["message"]["round_state"]
         # print("round state:", round_state)
         hole_card = game_state['table'].seats.players[0 if is_max else 1].hole_card
-        return value_network(hole_card, round_state), None
+        val = value_network(*encode_game_state(hole_card, round_state))
+        # print(val)
+        return val, None
     
-    if depth == 0:
-        # TODO: call evaluation function
-        # events[-1][1]["message"]["round_state"] always exists (I think)
-        round_state = events[-1][1]["message"]["round_state"]
-        # print("round state:", round_state)
-        hole_card = game_state['table'].seats.players[0 if is_max else 1].hole_card
-        return value_network(hole_card, round_state), None
 
     # Generate legal actions at current state
     actions = ActionChecker.legal_actions(
@@ -32,6 +28,8 @@ def minimax(game_state, events, depth, is_max, value_network):
         game_state["street"]
     )
 
+    #test: remove fold from actions
+    actions = [action for action in actions if action["action"] != "fold"]
     # Search actions recursively
     top_score = -inf if is_max else inf
     top_action = None
