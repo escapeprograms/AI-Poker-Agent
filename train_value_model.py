@@ -13,16 +13,16 @@ from torch.utils.data import DataLoader
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def simulate(evaluation_function, num_rounds=3200):
+def simulate(evaluation_function, num_rounds=3200, explore_chance=0.5):
 
-    config = setup_config(max_round=num_rounds, initial_stack=10000, small_blind_amount=10)
+    config = setup_config(max_round=num_rounds, initial_stack=1000000, small_blind_amount=10)
 
-    p1 = MinimaxPlayer(evaluation_function)
-    p2 = MinimaxPlayer(evaluation_function)
+    p1 = MinimaxPlayer(evaluation_function, explore_chance=explore_chance)
+    p2 = MinimaxPlayer(evaluation_function, explore_chance=explore_chance)
     config.register_player(name="Eric", algorithm=p1)
     config.register_player(name="Evil", algorithm=p2)
 
-    game_result = start_poker(config, verbose=0)
+    game_result = start_poker(config, verbose=1)
     #extract training data from both players
     hole_suit1, hole_rank1, hole_card_idx1, board_suit1, board_rank1, board_card_idx1, actions_occured1, bet_sizes1 = p1.train_embedded_state
     hole_suit2, hole_rank2, hole_card_idx2, board_suit2, board_rank2, board_card_idx2, actions_occured2, bet_sizes2 = p2.train_embedded_state
@@ -40,9 +40,6 @@ evaluation_function = ValueNetwork()
 
 criterion = nn.MSELoss()
 optimizer = optim.Adam(evaluation_function.parameters(), lr=0.0001)
-
-num_epochs = 30
-batch_size = 2
 
 evaluation_function.to(device)
 
@@ -94,10 +91,19 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("Finished Training")
 
 #Run self-play to gather data, then train the value function
-for j in range(10):
-    state = simulate(evaluation_function, num_rounds = 320)
+num_epochs = 20
+batch_size = 1
+num_rounds = 32
+explore_chance = 1
+
+for j in range(30):
+    state = simulate(evaluation_function, num_rounds = num_rounds, explore_chance=explore_chance)
     train_loop(*state, evaluation_function, num_epochs=num_epochs, batch_size=batch_size)
     evaluation_function.eval()
+
+    explore_chance *= 0.95
+    if num_rounds < 100000:
+        num_rounds *= 2
 
     #save model
     torch.save(evaluation_function.state_dict(), "models/evaluation_function.pth")

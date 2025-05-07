@@ -14,10 +14,10 @@ from math import inf
 pp = pprint.PrettyPrinter(indent=2)
 
 class MinimaxPlayer(BasePokerPlayer):       
-    def __init__(self, value_network, train=False):
+    def __init__(self, value_network, train=False, explore_chance=0):
         super().__init__()
         self.value_network = value_network
-
+        self.explore_chance = 0.5 #exploration chance
         self.pot = 0 #store the pot of the round
 
         #after each round, store some training data from the round
@@ -36,8 +36,8 @@ class MinimaxPlayer(BasePokerPlayer):
             winners = events[-1][1]["message"]["winners"]
             for winner in winners:
                 if winner["uuid"] == self.uuid:
-                    return self.pot * max_multiplier, None
-            return -self.pot * max_multiplier, None
+                    return self.pot, None #the original (max) player wins
+            return -self.pot, None #the original (max) player loses
 
         #maximum depth reached
         if depth == 0:
@@ -69,8 +69,9 @@ class MinimaxPlayer(BasePokerPlayer):
             if (is_max and score > top_score) or (not is_max and score < top_score):
                 top_score, top_action = score, action
 
-            # if depth==2:
-            #     print(score,action, is_max)
+            #print
+            if depth==2:
+                print(score,action, is_max)
         return top_score, top_action
 
     def declare_action(self, valid_actions, hole_card, round_state):
@@ -84,6 +85,10 @@ class MinimaxPlayer(BasePokerPlayer):
         if round_state['street'] == 'preflop':
             # print("CALLING PREFLOP")
             return "call"
+
+        #exploration step
+        if np.random.rand() < self.explore_chance:
+            return np.random.choice(valid_actions)['action']
 
         # Get agent's UUID
         seat = round_state["next_player"]
@@ -104,7 +109,8 @@ class MinimaxPlayer(BasePokerPlayer):
                 game_state = attach_hole_card_from_deck(game_state, seat["uuid"])
 
         # Search for best action
-        return self.minimax(game_state, None, 2, is_max=True, value_network=self.value_network)[1]["action"]
+        depth = 2
+        return self.minimax(game_state, None, depth, is_max=True, value_network=self.value_network)[1]["action"]
 
 
     def receive_game_start_message(self, game_info): pass

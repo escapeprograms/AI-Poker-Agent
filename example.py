@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 with torch.no_grad():
     evaluation_function = ValueNetwork()
-    evaluation_function.load_state_dict(torch.load("models/evaluation_function.pth", weights_only=True))
+    evaluation_function.load_state_dict(torch.load("models/evaluation_function1.pth", weights_only=True))
     evaluation_function.to(device)
     evaluation_function.eval()
 
