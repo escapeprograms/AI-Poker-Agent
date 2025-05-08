@@ -19,7 +19,7 @@ class MinimaxPlayer(BasePokerPlayer):
         self.value_network = value_network
         self.explore_chance = 0.5 #exploration chance
         self.pot = 0 #store the pot of the round
-        self.max_depth = 2
+        self.max_depth = 1
 
         #after each round, store some training data from the round
         #hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes
@@ -131,6 +131,7 @@ class MinimaxPlayer(BasePokerPlayer):
     def receive_street_start_message(self, street, round_state): pass
     def receive_game_update_message(self, action, round_state): pass
     def receive_round_result_message(self, winners, hand_info, round_state):
+        # DEPRECATED!!!! data collection now in train_value_model.py
         #after each round, store training data containing the hole cards, a partial state, and the value (money won/lost)
         value = self.pot * (1 if winners[0]['uuid'] == self.uuid else -1)
         # print("VALUE", value, "WINNER", winners[0]['uuid'])
