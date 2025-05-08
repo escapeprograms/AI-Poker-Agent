@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
-from policy import PolicyNet, testGame, model_wrapper
-from utils import expectedValue
+from policy import PolicyNet, model_wrapper
+from policy_test import testGame
 from datetime import datetime
 from encode_state import encode_card
 
@@ -97,4 +97,5 @@ if __name__ == "__main__":
     model = PolicyNet()
     model.load_state_dict(torch.load("models/evaluation_function[latest-test].pth"))
 
-    train_iterations(model, 100, num_tests=2, num_epochs=2, batch_size=1)
+    train_iterations(model, 10, num_tests=2, num_epochs=2, batch_size=1)
+    #train_iterations(model, 100, num_tests=2, num_epochs=2, batch_size=1)
