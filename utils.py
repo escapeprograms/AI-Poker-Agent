@@ -34,6 +34,11 @@ def cardify(cards: list[str]) -> list[Card]:
 def example_policy(hand: list[str], community: list[str], pot: int, canRaise: bool) -> tuple[float, float, float]:
   return (1/3, 1/3, 1/3) # foldProb, callProb, raiseProb
 
+# Policy of random player
+def random_policy(hand, community, pot, canRaise):
+  r = 0.45 if canRaise else 0
+  return (0.5-r, 0.5, r)
+
 # Sample usage
 # expectedValue(policy, ['DA', 'DK'], ['C2', 'C7'], ['DJ', 'DT', 'D9', 'D2', 'C8'], 120, 0, {"callEnds": True, "p1Raises": 4, "p2Raises": 4, "phase": "river", "firstPlayer": 1, "p1Paid": 60, "phaseRaises": 4})
 # expectedValue(policy, ['DA', 'DK'], ['C2', 'C7'], ['DJ', 'DT', 'D9', 'D2', 'C8'])
