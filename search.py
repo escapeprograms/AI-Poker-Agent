@@ -61,9 +61,9 @@ def manual_walk(game_state, event=None):
     print("\nGame state:")
     print(f"   Player:    {game_state['next_player']}")
     print(f"   Street:    {game_state['street']}")
-    print(f"   Community: {[str(card) for card in game_state["table"]._community_card]}")
+    print(f"   Community: {[str(card) for card in game_state['table']._community_card]}")
     print(f"   Player:    {game_state['next_player']}")
-    print(f"   Hole:      {[str(card) for card in game_state["table"].seats.players[game_state["next_player"]].hole_card]}")
+    print(f"   Hole:      {[str(card) for card in game_state['table'].seats.players[game_state['next_player']].hole_card]}")
 
     if (game_state["street"] == Const.Street.FINISHED):
         print(f"\nWinner: {event[1]["message"]["winners"]}")
