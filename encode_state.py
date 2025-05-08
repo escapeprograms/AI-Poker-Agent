@@ -1,24 +1,21 @@
 import torch
+from utils import SUITS, RANKS, SUIT_TO_INDEX, RANK_TO_INDEX
+
 def encode_card(card):
-    suits = ['C', 'D', 'H', 'S']  # Clubs, Diamonds, Hearts, Spades
-    ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
-    num_suits = len(suits)
-    num_ranks = len(ranks)
-
-    suit_to_index = {suit: i for i, suit in enumerate(suits)}
-    rank_to_index = {rank: i for i, rank in enumerate(ranks)}
+    num_suits = len(SUITS)
+    num_ranks = len(RANKS)
 
     rank_str = str(card)[1]
     suit_str = str(card)[0]
-    card_ind = suit_to_index[suit_str]*13 + rank_to_index[rank_str]
+    card_ind = SUIT_TO_INDEX[suit_str]*13 + RANK_TO_INDEX[rank_str]
 
-    if suit_str not in suits or rank_str not in ranks:
+    if suit_str not in SUITS or rank_str not in RANKS:
         raise ValueError(f"Invalid card string: {card}. "
-                            f"Suits must be in {suits}, ranks in {ranks}.")
+                            f"Suits must be in {SUITS}, ranks in {RANKS}.")
     
     #return all indices +1 (the 0 index represents an empty)
-    return suit_to_index[suit_str]+1, rank_to_index[rank_str]+1, card_ind+1
+    return SUIT_TO_INDEX[suit_str]+1, RANK_TO_INDEX[rank_str]+1, card_ind+1
 
 def encode_bet(game_state, cur_player=0):
     #encode oppponent bets
