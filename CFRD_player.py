@@ -21,6 +21,28 @@ class CFRDPlayer(BasePokerPlayer):
         self.value_network = value_network
         self.device = device
 
+    #static method to get the policy
+    def get_policy(game_state, hole_card, actions, value_network, cur_player, eval_device="cpu"):
+        pred_vals = []
+        policy = []
+        for action in actions:
+            #calculate the value of each action
+            val = value_network(*encode_game_state(hole_card, game_state, action, cur_player, device=eval_device)).item()
+            pred_vals.append(val) #don't allow negative values
+
+        #calculate the policy
+        total_val = sum([max(0, val) for val in pred_vals])
+
+        #if all values are negative, use the max value
+        if total_val == 0:
+            policy = [0, 0, 0]
+            policy[pred_vals.index(max(pred_vals))] = 1
+        else:
+            #define policy based on values
+            for val in pred_vals:
+                probability = max(val, 0) / total_val
+                policy.append(probability)
+        return pred_vals, policy
 
     def declare_action(self, valid_actions, hole_card, round_state):
 
@@ -32,20 +54,9 @@ class CFRDPlayer(BasePokerPlayer):
         game_state = restore_game_state(round_state)        
 
         #copied from train_value_model.py simulation
-        policy = []
-        pred_vals = []
-        for action in valid_actions:
-            #calculate the value of each action
-            val = self.value_network(*encode_game_state(hole_card, game_state, action, seat, device=self.device))
-            pred_vals.append(val.item())
-        total_val = sum(pred_vals)
-        for val in pred_vals:
-            if total_val == 0:
-                probability = 1 / len(pred_vals) #uniform distribution if no info yet
-            else:
-                probability = val / total_val
-            policy.append(probability)
+        pred_vals, policy = CFRDPlayer.get_policy(game_state, hole_card, valid_actions, self.value_network, seat, eval_device=self.device)
         
+        print("Policy", policy)
         #choose an action to take
         action_indices = list(range(len(policy)))
         selected_action = random.choices(action_indices, weights=policy, k=1)[0]

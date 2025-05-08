@@ -14,6 +14,8 @@ from randomplayer import RandomPlayer
 from value_model import ValueNetwork
 from training.value_dataset import ValueDataset
 
+from CFRD_player import CFRDPlayer
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -28,6 +30,9 @@ eval_device = "cpu"
 #partial game traversal
 initial_stack = 10000
 
+verbose_print = False
+
+
 def traverse(training_data, game_state, events, depth=3, value_network = None, training_round = 0):
     cur_player = game_state["next_player"]
     # round_state = events[-1][1]["message"]["round_state"]
@@ -41,8 +46,9 @@ def traverse(training_data, game_state, events, depth=3, value_network = None, t
         # print("winner",winners)
         # is this wrong? do we need to make it the same for both players?
         
-        # print("I am player", cur_player, "with hole card", hole_card)
-        # print("my value (terminal)", game_state['table'].seats.players[cur_player].stack - initial_stack)
+        if verbose_print == True:
+            print("I am player", cur_player)
+            print("my value (terminal)", game_state['table'].seats.players[cur_player].stack - initial_stack)
         return game_state['table'].seats.players[cur_player].stack - initial_stack #return actual payoff
     
     # print("bets for", cur_player, game_state['table'].seats.players[cur_player].round_action_histories)
@@ -54,23 +60,18 @@ def traverse(training_data, game_state, events, depth=3, value_network = None, t
         game_state["street"]
     )
 
-    #calculate a policy
-    policy = []
+    #predict regrets/advantages for each action
     pred_vals = []
-    for action in actions:
-        #calculate the value of each action
-        if training_round==0: #for the first round, force a uniform distribution
-            val = 0
-        else:
-            val = value_network(*encode_game_state(hole_card, game_state, action, cur_player, device=eval_device)).item()
-        pred_vals.append(max(0, val)) #don't allow negative values
-    total_val = sum(pred_vals)
-    for val in pred_vals:
-        if total_val == 0:
-            probability = 1 / len(pred_vals) #uniform distribution if no info yet
-        else:
-            probability = val / total_val
-        policy.append(probability)
+    policy = []
+    if training_round==0: #for the first round, force a distribution similar to random_player with less of a chance of folding
+        if (len(actions) == 2):
+            pred_vals = [0, 0]
+            policy = [0.01, 0.99]
+        elif (len(actions) == 3):
+            pred_vals = [0, 0, 0]
+            policy = [0.01, 0.5, 0.49]
+    else:
+        pred_vals, policy = CFRDPlayer.get_policy(game_state, hole_card, actions, value_network, cur_player)
     
     #choose an action to take
     action_indices = list(range(len(policy)))
@@ -99,10 +100,13 @@ def traverse(training_data, game_state, events, depth=3, value_network = None, t
     #calculate regret of each action
     expected_value = np.dot(np.array(policy), np.array(values)) #weighted average of traversed values
     
-    # print("I am player", cur_player, "with hole card", hole_card)
-    # print("my values", values)
-    # print("my policy", policy)
-    # print("expected value", expected_value)
+    if verbose_print == True:
+        print("I am player", cur_player, "with hole card", str(hole_card[0]), str(hole_card[1]))
+        community_cards = [str(card) for card in game_state['table']._community_card]
+        print("community cards", community_cards)
+        print("my values", values)
+        print("my policy", policy)
+        print("expected value", expected_value)
     for i, action in enumerate(actions):
         regret = values[i] - expected_value #instantaneous regret
         #add a training example
@@ -150,6 +154,7 @@ def simulate(evaluation_function, num_rounds=3200, training_round=0):
 evaluation_function = ValueNetwork()
 evaluation_function.to(eval_device)
 
+# simulate(evaluation_function, num_rounds=1, training_round=0)
 
 def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action, values, model, num_epochs=30, batch_size=1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -200,9 +205,9 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("Finished Training")
 
 #Run self-play to gather data, then train the value function
-num_epochs = 30
+num_epochs = 40
 batch_size = 32
-num_rounds = 1000
+num_rounds = 2000
 
 for j in range(10):
     print("running round", j)
@@ -225,4 +230,4 @@ for j in range(10):
     #     num_rounds *= 2
 
     #save model
-    torch.save(evaluation_function.state_dict(), "models/evaluation_function_regret.pth")
+    torch.save(evaluation_function.state_dict(), f"models/CFR-D_cp{j}.pth")
