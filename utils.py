@@ -17,10 +17,16 @@ RAISE_AMT = {
   "river": 40
 }
 
+SUITS = ('C', 'D', 'H', 'S') # Clubs, Diamonds, Hearts, Spades
+RANKS = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A')
+CARDS = tuple([s+r for s in SUITS for r in RANKS])
+
+SUIT_TO_INDEX = {suit: i for i, suit in enumerate(SUITS)}
+RANK_TO_INDEX = {rank: i for i, rank in enumerate(RANKS)}
+
 # Convert a list of cards in string form to a list of cards in Card object form
 def cardify(cards: list[str]) -> list[Card]:
   return list(map(lambda card: Card.from_str(card), cards))
-
 
 # Example policy
 # Note that community may be an empty list if it is the preflop phase
@@ -59,7 +65,6 @@ def expectedValue(policy1, policy2, hand1: list[str], hand2: list[str], communit
   # print(f"p1Raises: {gameStateInfo['p1Raises']} | {f} {c} {r}")
   # Amount that can be won: round_state["pot"]["main"]["amount"]
   
-
 
   fEV = -gameStateInfo["p1Paid"] # EV from folding
   cEV = 0 # Arbitrary value for initialization
