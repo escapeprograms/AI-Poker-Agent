@@ -107,6 +107,7 @@ def traverse(training_data, game_state, events, depth=3, value_network = None, t
         print("my values", values)
         print("my policy", policy)
         print("expected value", expected_value)
+    
     for i, action in enumerate(actions):
         regret = values[i] - expected_value #instantaneous regret
         #add a training example
