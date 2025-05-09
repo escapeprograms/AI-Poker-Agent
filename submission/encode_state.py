@@ -1,5 +1,5 @@
 import torch
-from submission.utils import SUITS, RANKS, SUIT_TO_INDEX, RANK_TO_INDEX
+from utils import SUITS, RANKS, SUIT_TO_INDEX, RANK_TO_INDEX
 
 def encode_card(card):
     rank_str = str(card)[1]
