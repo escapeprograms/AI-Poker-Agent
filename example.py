@@ -4,6 +4,7 @@ from raise_player import RaisedPlayer, CallPlayer
 from randomplayer import RandomPlayer
 from CFRD_player import CFRDPlayer
 from value_model import CardEmbedding, ValueNetwork
+from submission.custom_player import CustomPlayer
 import torch
 
 config = setup_config(max_round=500, initial_stack=1000, small_blind_amount=10)
@@ -16,7 +17,9 @@ with torch.no_grad():
     evaluation_function.to(device)
     evaluation_function.eval()
 
-    config.register_player(name="Eric", algorithm=CFRDPlayer(evaluation_function, device="cuda"))
+    # config.register_player(name="Eric", algorithm=CFRDPlayer(evaluation_function, device="cuda"))
+    config.register_player(name="Eric", algorithm=CustomPlayer())
+
     config.register_player(name="Evil", algorithm=RaisedPlayer())
 
     game_result = start_poker(config, verbose=1)
