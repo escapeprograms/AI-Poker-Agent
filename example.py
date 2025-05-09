@@ -6,18 +6,18 @@ from CFRD_player import CFRDPlayer
 from value_model import CardEmbedding, ValueNetwork
 import torch
 
-config = setup_config(max_round=1000, initial_stack=10000, small_blind_amount=10)
+config = setup_config(max_round=500, initial_stack=1000, small_blind_amount=10)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 with torch.no_grad():
     evaluation_function = ValueNetwork()
-    evaluation_function.load_state_dict(torch.load("models/good_models/CFR-D_cp0.pth", weights_only=True))
+    evaluation_function.load_state_dict(torch.load("models/CFR-D_cp7.pth", weights_only=True))
     evaluation_function.to(device)
     evaluation_function.eval()
 
     config.register_player(name="Eric", algorithm=CFRDPlayer(evaluation_function, device="cuda"))
-    config.register_player(name="Evil", algorithm=RandomPlayer())
+    config.register_player(name="Evil", algorithm=RaisedPlayer())
 
     game_result = start_poker(config, verbose=1)
 

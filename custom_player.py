@@ -22,7 +22,7 @@ pp = pprint.PrettyPrinter(indent=2)
 
 class CustomPlayer(CFRDPlayer):
     evaluation_function = ValueNetwork()
-    evaluation_function.load_state_dict(torch.load("models/good_models/CFR-D_cp0.pth", weights_only=True))  
+    evaluation_function.load_state_dict(torch.load("models/good_models/CFR-D1.pth", weights_only=True))  
     def __init__(self):
         super().__init__(evaluation_function=self.evaluation_function, device="cpu")
 
