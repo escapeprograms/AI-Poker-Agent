@@ -57,28 +57,28 @@ def minimax(game_state, events, depth, is_max, value_network):
 
 
 # Change timeout2 call in pypokerengine/api/game to use this
-def manual_walk(game_state, event=None):
-    print("\nGame state:")
-    print(f"   Player:    {game_state['next_player']}")
-    print(f"   Street:    {game_state['street']}")
-    print(f"   Community: {[str(card) for card in game_state['table']._community_card]}")
-    print(f"   Player:    {game_state['next_player']}")
-    print(f"   Hole:      {[str(card) for card in game_state['table'].seats.players[game_state['next_player']].hole_card]}")
+# def manual_walk(game_state, event=None):
+    # print("\nGame state:")
+    # print(f"   Player:    {game_state['next_player']}")
+    # print(f"   Street:    {game_state['street']}")
+    # print(f"   Community: {[str(card) for card in game_state['table']._community_card]}")
+    # print(f"   Player:    {game_state['next_player']}")
+    # print(f"   Hole:      {[str(card) for card in game_state['table'].seats.players[game_state['next_player']].hole_card]}")
 
-    if (game_state["street"] == Const.Street.FINISHED):
-        print(f"\nWinner: {event[1]["message"]["winners"]}")
-        quit()
+    # if (game_state["street"] == Const.Street.FINISHED):
+    #     # print(f"\nWinner: {event[1]["message"]["winners"]}")
+    #     quit()
 
-    actions = ActionChecker.legal_actions(
-        game_state["table"].seats.players, 
-        game_state["next_player"],
-        game_state["small_blind_amount"],
-        game_state["street"]
-    )
+    # actions = ActionChecker.legal_actions(
+    #     game_state["table"].seats.players, 
+    #     game_state["next_player"],
+    #     game_state["small_blind_amount"],
+    #     game_state["street"]
+    # )
 
-    print(f"\nAvailable actions:")
-    for i, entry in enumerate(actions, start=1):
-        print(f"   {i}. {entry['action']}")
-    choice = input("> ")
-    next_state, events = RoundManager.apply_action(game_state, actions[int(choice) - 1]["action"])   
-    manual_walk(next_state, events[-1])
+    # print(f"\nAvailable actions:")
+    # for i, entry in enumerate(actions, start=1):
+    #     # print(f"   {i}. {entry['action']}")
+    # choice = input("> ")
+    # next_state, events = RoundManager.apply_action(game_state, actions[int(choice) - 1]["action"])   
+    # manual_walk(next_state, events[-1])
