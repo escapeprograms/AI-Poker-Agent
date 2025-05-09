@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class CardEmbedding(nn.Module):
     def __init__(self, embedding_dim=64):
         super(CardEmbedding, self).__init__()
@@ -18,10 +20,19 @@ class CardEmbedding(nn.Module):
         self.rank_embedding = nn.Embedding(self.num_ranks, embedding_dim)
         self.card_embedding = nn.Embedding(self.num_ranks*self.num_suits, embedding_dim) #note: there are some extra 0s 
 
+
+        # Create mappings from card st
+
     def forward(self, suit_indices, rank_indices, card_indices):
+
+        # suit_indices = torch.tensor(suit_indices, dtype=torch.long).to(device)
+        # rank_indices = torch.tensor(rank_indices, dtype=torch.long).to(device)
+        # card_indices = torch.tensor(card_indices, dtype=torch.long).to(device)
+
         suit_embedding = self.suit_embedding(suit_indices)
         rank_embedding = self.rank_embedding(rank_indices)
         card_embedding = self.card_embedding(card_indices)
+        
         final_embedding = suit_embedding + rank_embedding + card_embedding
         return final_embedding
 
@@ -85,10 +96,13 @@ class ValueNetwork(nn.Module):
         cards_layer = self.relu(cards_layer)
 
         #action portion of the network
+        # action = torch.tensor(action, dtype=torch.int32).to(device)
         action_layer = self.encode_action(action)
         action_layer = self.lin_skip_small(action_layer)
 
         #bets/actions portion of the network
+        # actions_occured = torch.tensor(actions_occured, dtype=torch.float).to(device)
+        # bet_sizes = torch.tensor(bet_sizes, dtype=torch.float).to(device)
         bets_layer = torch.cat((actions_occured, bet_sizes), dim=-1) #24+24=48 dim size
 
         bets_layer = self.encode_bets(bets_layer)
@@ -96,6 +110,7 @@ class ValueNetwork(nn.Module):
         bets_layer = self.lin_skip_small(bets_layer)
 
         #combine
+        # print("main size", main_layer.shape)
         main_layer = torch.cat((cards_layer, bets_layer, action_layer), dim=-1) #2 * small layer
         main_layer = self.merge_main(main_layer)
         main_layer = self.lin_skip_small(main_layer)

@@ -2,6 +2,10 @@ import torch
 from submission.utils import SUITS, RANKS, SUIT_TO_INDEX, RANK_TO_INDEX
 
 def encode_card(card):
+
+    num_suits = len(SUITS)
+    num_ranks = len(RANKS)
+
     rank_str = str(card)[1]
     suit_str = str(card)[0]
     card_ind = SUIT_TO_INDEX[suit_str]*13 + RANK_TO_INDEX[rank_str]
@@ -27,6 +31,7 @@ def encode_bet(game_state, cur_player=0):
 
         for j in range(len(street_actions)):
             actions_occured[6*i + j] = 1 #show that this bet has actually happened
+            # print("STREET ACTION", street_actions[j])
             if street_actions[j]['action'] in ["FOLD","SMALLBLIND","BIGBLIND"]:
                 bet_sizes[6*i + j] = 0
                 continue
@@ -36,7 +41,7 @@ def encode_bet(game_state, cur_player=0):
     return actions_occured, bet_sizes
 
 def encode_game_state(hole_card, game_state, action, cur_player=0, device="cuda"):
-    #store hole cards (0 if no card in this slot)
+    #store hoel cards (0 if no card in this slot)
     hole_suit = [0 for i in range(2)]
     hole_rank = [0 for i in range(2)]
     hole_card_idx = [0 for i in range(2)]

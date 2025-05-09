@@ -1,7 +1,14 @@
+import pprint
 import random
+
 from pypokerengine.players import BasePokerPlayer
 from encode_state import encode_game_state
+
+from math import inf
+
 from pypokerengine.utils.game_state_utils import restore_game_state
+
+pp = pprint.PrettyPrinter(indent=2)
 
 class CFRDPlayer(BasePokerPlayer):       
     def __init__(self, value_network, device='cuda'):
@@ -34,13 +41,18 @@ class CFRDPlayer(BasePokerPlayer):
 
     def declare_action(self, valid_actions, hole_card, round_state):
 
-        seat = round_state["next_player"]            # Get agent's UUID
-        game_state = restore_game_state(round_state) # Get the game state   
 
-        # Copied from train_value_model.py simulation
+        # Get agent's UUID
+        seat = round_state["next_player"]
+        uuid = round_state["seats"][seat]["uuid"]
+        # Get the game state
+        game_state = restore_game_state(round_state)        
+
+        #copied from train_value_model.py simulation
         pred_vals, policy = CFRDPlayer.get_policy(game_state, hole_card, valid_actions, self.value_network, seat, eval_device=self.device)
         
-        # Choose an action to take
+        print("Policy", policy)
+        #choose an action to take
         action_indices = list(range(len(policy)))
         selected_action = random.choices(action_indices, weights=policy, k=1)[0]
         return valid_actions[selected_action]["action"]

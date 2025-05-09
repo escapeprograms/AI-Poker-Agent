@@ -1,7 +1,15 @@
+import pprint
+
 import torch
-import os
+
 from CFRD_player import CFRDPlayer
 from value_model import ValueNetwork
+
+import torch
+import os
+import sys
+
+pp = pprint.PrettyPrinter(indent=2)
 
 class CustomPlayer(CFRDPlayer):
     evaluation_function = ValueNetwork()
