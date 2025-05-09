@@ -66,10 +66,10 @@ def traverse(training_data, game_state, events, depth=3, value_network = None, t
     if training_round==0: #for the first round, force a distribution similar to random_player with less of a chance of folding
         if (len(actions) == 2):
             pred_vals = [0, 0]
-            policy = [0.01, 0.99]
+            policy = [0.03, 0.97]
         elif (len(actions) == 3):
             pred_vals = [0, 0, 0]
-            policy = [0.01, 0.5, 0.49]
+            policy = [0.03, 0.49, 0.48]
     else:
         pred_vals, policy = CFRDPlayer.get_policy(game_state, hole_card, actions, value_network, cur_player)
     
@@ -206,9 +206,9 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("Finished Training")
 
 #Run self-play to gather data, then train the value function
-num_epochs = 40
+num_epochs = 60
 batch_size = 32
-num_rounds = 2000
+num_rounds = 8000
 
 for j in range(10):
     print("running round", j)
@@ -231,4 +231,4 @@ for j in range(10):
     #     num_rounds *= 2
 
     #save model
-    torch.save(evaluation_function.state_dict(), f"models/CFR-D_cp{j}.pth")
+    torch.save(evaluation_function.state_dict(), f"submission/models/CFR-D_cp{j}.pth")

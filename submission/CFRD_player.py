@@ -51,7 +51,7 @@ class CFRDPlayer(BasePokerPlayer):
         #copied from train_value_model.py simulation
         pred_vals, policy = CFRDPlayer.get_policy(game_state, hole_card, valid_actions, self.value_network, seat, eval_device=self.device)
         
-        print("Policy", policy)
+        # print("Policy", policy)
         #choose an action to take
         action_indices = list(range(len(policy)))
         selected_action = random.choices(action_indices, weights=policy, k=1)[0]

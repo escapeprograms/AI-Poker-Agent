@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, './pypokerengine/api/')
-import game
+# import game
 setup_config = game.setup_config
 start_poker = game.start_poker
 import time
