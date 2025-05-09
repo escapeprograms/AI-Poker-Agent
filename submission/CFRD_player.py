@@ -6,6 +6,8 @@ from encode_state import encode_game_state
 
 from math import inf
 
+from pypokerengine.utils.game_state_utils import restore_game_state
+
 pp = pprint.PrettyPrinter(indent=2)
 
 class CFRDPlayer(BasePokerPlayer):       
