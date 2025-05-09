@@ -13,7 +13,7 @@ RAISE_AMT = {
   "river": 40
 }
 
-# Clubs, Diamonds, Hearts, Spades
+# Clubs, diamonds, hearts, spades
 SUITS = ('C', 'D', 'H', 'S') 
 RANKS = ('2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A')
 CARDS = tuple([s+r for s in SUITS for r in RANKS])

@@ -9,24 +9,24 @@ class CFRDPlayer(BasePokerPlayer):
         self.value_network = value_network
         self.device = device
 
-    #static method to get the policy
+    # Static method to get the policy
     def get_policy(game_state, hole_card, actions, value_network, cur_player, eval_device="cpu"):
         pred_vals = []
         policy = []
         for action in actions:
-            #calculate the value of each action
+            # Calculate the value of each action
             val = value_network(*encode_game_state(hole_card, game_state, action, cur_player, device=eval_device)).item()
-            pred_vals.append(val) #don't allow negative values
+            pred_vals.append(val) # Don't allow negative values
 
-        #calculate the policy
+        # Calculate the policy
         total_val = sum([max(0, val) for val in pred_vals])
 
-        #if all values are negative, use the max value
+        # If all values are negative, use the max value
         if total_val == 0:
             policy = [0, 0, 0]
             policy[pred_vals.index(max(pred_vals))] = 1
         else:
-            #define policy based on values
+            # Define policy based on values
             for val in pred_vals:
                 probability = max(val, 0) / total_val
                 policy.append(probability)
