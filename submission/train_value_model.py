@@ -213,9 +213,9 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("Finished Training")
 
 #Run self-play to gather data, then train the value function
-num_epochs = 3
+num_epochs = 10
 batch_size = 64
-num_rounds = 50000
+num_rounds = 10000
 
 for j in range(3):
     print("running round", j)
@@ -240,4 +240,4 @@ for j in range(3):
     #     num_rounds *= 2
 
     #save model
-    torch.save(evaluation_function.state_dict(), f"submission/models/CFR-D_cp{j}.pth")
+    torch.save(evaluation_function.state_dict(), f"submission/models/CFR-D_cp{j}_fixed.pth")

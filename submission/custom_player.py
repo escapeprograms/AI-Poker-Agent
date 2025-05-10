@@ -13,7 +13,7 @@ pp = pprint.PrettyPrinter(indent=2)
 
 class CustomPlayer(CFRDPlayer):
     evaluation_function = ValueNetwork()
-    model_path = os.path.join(os.path.dirname(__file__), "models/Minimax CFR-D 1/CFR-D_cp7.pth")
+    model_path = os.path.join(os.path.dirname(__file__), "models/CFR-D_cp0_fixed.pth")
     evaluation_function.load_state_dict(torch.load(model_path, weights_only=True))  
     def __init__(self):
         super().__init__(self.evaluation_function, device="cpu")

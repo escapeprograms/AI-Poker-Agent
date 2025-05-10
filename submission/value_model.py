@@ -135,8 +135,6 @@ class ValueNetwork(nn.Module):
         value_layer = self.lin_skip_small8(value_layer)
         value_layer = self.lin_final1(value_layer)
 
-
-
         return torch.cat((regret_layer, value_layer), dim=-1) #return the value and regret
         
 

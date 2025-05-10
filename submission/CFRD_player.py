@@ -23,28 +23,28 @@ class CFRDPlayer(BasePokerPlayer):
         pred_vals = []
         policy = []
         for action in actions:
-            if action["action"] == "fold": #get direct value for fold
-                bet = 0
-                past_actions = game_state["table"].seats.players[cur_player].round_action_histories
+            # if action["action"] == "fold": #get direct value for fold
+            #     bet = 0
+            #     past_actions = game_state["table"].seats.players[cur_player].round_action_histories
 
-                #add the blind amount to the bet
-                if past_actions[0] is not None and past_actions[0][0]['action'] == "BIGBLIND":
-                    bet = game_state["small_blind_amount"] * 2
-                else:
-                    bet = game_state["small_blind_amount"]
-                #check all bets
-                for i in range(len(past_actions)):
-                    street_actions = past_actions[i]
-                    if street_actions == None:
-                        break
-                    for j in range(len(street_actions)):
-                        if street_actions[j]['action'] in ["FOLD","SMALLBLIND","BIGBLIND"]:
-                            continue
-                        bet += street_actions[j]['paid'] 
+            #     #add the blind amount to the bet
+            #     if past_actions[0] is not None and past_actions[0][0]['action'] == "BIGBLIND":
+            #         bet = game_state["small_blind_amount"] * 2
+            #     else:
+            #         bet = game_state["small_blind_amount"]
+            #     #check all bets
+            #     for i in range(len(past_actions)):
+            #         street_actions = past_actions[i]
+            #         if street_actions == None:
+            #             break
+            #         for j in range(len(street_actions)):
+            #             if street_actions[j]['action'] in ["FOLD","SMALLBLIND","BIGBLIND"]:
+            #                 continue
+            #             bet += street_actions[j]['paid'] 
                 
-                pred_regrets.append(-bet)
-                pred_vals.append(-bet)
-                continue
+            #     pred_regrets.append(-bet)
+            #     pred_vals.append(-bet)
+            #     continue
             
             #calculate the value of each other action
             # print("TEST", value_network(*encode_game_state(hole_card, game_state, action, cur_player, device=eval_device)))
@@ -65,7 +65,6 @@ class CFRDPlayer(BasePokerPlayer):
             for regret in pred_regrets:
                 probability = max(regret, 0) / total_regret
                 policy.append(probability)
-        print(pred_regrets)
         return pred_vals, policy #return values and policy for each action 
 
     def declare_action(self, valid_actions, hole_card, round_state):
