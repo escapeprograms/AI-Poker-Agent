@@ -211,9 +211,9 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("Finished Training")
 
 #Run self-play to gather data, then train the value function
-num_epochs = 15
-batch_size = 32
-num_rounds = 2000
+num_epochs = 3
+batch_size = 256
+num_rounds = 40000
 
 for j in range(3):
     print("running round", j)
@@ -226,10 +226,12 @@ for j in range(3):
     criterion = nn.MSELoss()
     optimizer = optim.Adam(evaluation_function.parameters(), lr=0.0001)
 
+    evaluation_function = nn.DataParallel(evaluation_function) #parallelize for GPU
     evaluation_function.to(device)
     train_loop(*state, evaluation_function, num_epochs=num_epochs, batch_size=batch_size)
     evaluation_function.eval()
     evaluation_function.to(eval_device) #evaluate on eval device (CPU)
+    evaluation_function = evaluation_function.module #get the original model
 
     # explore_chance *= 0.95
     # if num_rounds < 100000:
