@@ -194,6 +194,8 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
             value = value.unsqueeze(1) 
             regret = regret.unsqueeze(1)
             output = torch.cat((regret, value), dim=1)
+            # print("output", output)
+            # print("predicted", predicted_values)
             loss = criterion(predicted_values.to(device), output.to(device))
 
             # Backward pass: Compute gradients
@@ -212,14 +214,14 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
 
 #Run self-play to gather data, then train the value function
 num_epochs = 3
-batch_size = 256
-num_rounds = 40000
+batch_size = 64
+num_rounds = 50000
 
 for j in range(3):
     print("running round", j)
     #re-initialize model after simulating
     
-
+    
     state = simulate(evaluation_function, num_rounds = num_rounds, training_round = j)
     evaluation_function = ValueNetwork()
 
@@ -232,7 +234,7 @@ for j in range(3):
     evaluation_function.eval()
     evaluation_function.to(eval_device) #evaluate on eval device (CPU)
     evaluation_function = evaluation_function.module #get the original model
-
+    state = None #clear memory
     # explore_chance *= 0.95
     # if num_rounds < 100000:
     #     num_rounds *= 2

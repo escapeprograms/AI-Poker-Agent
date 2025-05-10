@@ -47,7 +47,9 @@ class CFRDPlayer(BasePokerPlayer):
                 continue
             
             #calculate the value of each other action
+            # print("TEST", value_network(*encode_game_state(hole_card, game_state, action, cur_player, device=eval_device)))
             regret, val = value_network(*encode_game_state(hole_card, game_state, action, cur_player, device=eval_device)).tolist()
+            # print(regret,val, "THE TWO STOOGES")
             pred_regrets.append(regret)
             pred_vals.append(val)
 
@@ -63,6 +65,7 @@ class CFRDPlayer(BasePokerPlayer):
             for regret in pred_regrets:
                 probability = max(regret, 0) / total_regret
                 policy.append(probability)
+        print(pred_regrets)
         return pred_vals, policy #return values and policy for each action 
 
     def declare_action(self, valid_actions, hole_card, round_state):

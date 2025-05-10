@@ -16,7 +16,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #           "submission/models/CFR-D_cp4.pth", "submission/models/CFR-D_cp3.pth", "submission/models/CFR-D_cp2.pth", 
 #           "submission/models/CFR-D_cp1.pth", "submission/models/CFR-D_cp0.pth"]
 
-models = ["submission/models/CFR-D_cp0.pth"]
+models = ["submission/models/Minimax CFR-D 3/CFR-D_cp2.pth","submission/models/Minimax CFR-D 3/CFR-D_cp1.pth","submission/models/Minimax CFR-D 3/CFR-D_cp0.pth"]
 def run_game(algo1, algo2):
     config = setup_config(max_round=500, initial_stack=1000, small_blind_amount=10)
     config.register_player(name="Eric", algorithm=algo1)

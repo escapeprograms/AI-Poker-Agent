@@ -62,7 +62,15 @@ class ValueNetwork(nn.Module):
         self.card_embedder = CardEmbedding(self.embedding_dim)
 
         self.relu = nn.ReLU()
-        self.lin_skip_small = SkipRelu(self.embedding_dim)
+        self.lin_skip_small1 = SkipRelu(self.embedding_dim)
+        self.lin_skip_small2 = SkipRelu(self.embedding_dim)
+        self.lin_skip_small3 = SkipRelu(self.embedding_dim)
+        self.lin_skip_small4 = SkipRelu(self.embedding_dim)
+        self.lin_skip_small5 = SkipRelu(self.embedding_dim)
+        self.lin_skip_small6 = SkipRelu(self.embedding_dim)
+        self.lin_skip_small7 = SkipRelu(self.embedding_dim)
+        self.lin_skip_small8 = SkipRelu(self.embedding_dim)
+        
         self.lin_skip_large = SkipRelu(self.hidden_size)
 
         
@@ -73,9 +81,11 @@ class ValueNetwork(nn.Module):
         self.encode_bets = nn.Linear(48, self.embedding_dim)
 
         self.layer_norm = nn.LayerNorm(self.embedding_dim)
-        self.merge_main = nn.Linear(self.embedding_dim*3, self.embedding_dim)
+        self.merge_main1 = nn.Linear(self.embedding_dim*3, self.embedding_dim)
+        self.merge_main2 = nn.Linear(self.embedding_dim*3, self.embedding_dim)
 
-        self.lin_final = nn.Linear(self.embedding_dim, 1)
+        self.lin_final1 = nn.Linear(self.embedding_dim, 1)
+        self.lin_final2 = nn.Linear(self.embedding_dim, 1)
 
     def forward(self, hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action): #takes in the inputs from the entire state
         hand_embedding_all_cards = self.card_embedder(hole_suit, hole_rank, hole_card_idx) #hand cards
@@ -85,8 +95,8 @@ class ValueNetwork(nn.Module):
         board_embedding = torch.sum(board_embedding_all_cards, dim=-2)
         
         #card portion of the network
-        hand = self.lin_skip_small(hand_embedding)
-        board = self.lin_skip_small(board_embedding)
+        hand = self.lin_skip_small1(hand_embedding)
+        board = self.lin_skip_small2(board_embedding)
         cards_layer = torch.cat((hand, board), dim=-1)
         cards_layer = self.merge_cards(cards_layer)
         cards_layer = self.relu(cards_layer)
@@ -99,7 +109,7 @@ class ValueNetwork(nn.Module):
         #action portion of the network
         # action = torch.tensor(action, dtype=torch.int32).to(device)
         action_layer = self.encode_action(action)
-        action_layer = self.lin_skip_small(action_layer)
+        action_layer = self.lin_skip_small3(action_layer)
 
         #bets/actions portion of the network
         # actions_occured = torch.tensor(actions_occured, dtype=torch.float).to(device)
@@ -108,22 +118,22 @@ class ValueNetwork(nn.Module):
 
         bets_layer = self.encode_bets(bets_layer)
         bets_layer = self.relu(bets_layer)
-        bets_layer = self.lin_skip_small(bets_layer)
+        bets_layer = self.lin_skip_small4(bets_layer)
 
         #combine these components in 2 ways: a value layer and a regret layer
         regret_layer = torch.cat((cards_layer, bets_layer, action_layer), dim=-1) #2 * small layer
-        regret_layer = self.merge_main(regret_layer)
-        regret_layer = self.lin_skip_small(regret_layer)
+        regret_layer = self.merge_main1(regret_layer)
+        regret_layer = self.lin_skip_small5(regret_layer)
         regret_layer = self.layer_norm(regret_layer)
-        regret_layer = self.lin_skip_small(regret_layer)
-        regret_layer = self.lin_final(regret_layer)
+        regret_layer = self.lin_skip_small6(regret_layer)
+        regret_layer = self.lin_final1(regret_layer)
 
         value_layer = torch.cat((cards_layer, bets_layer, action_layer), dim=-1) #2 * small layer
-        value_layer = self.merge_main(value_layer)
-        value_layer = self.lin_skip_small(value_layer)
+        value_layer = self.merge_main1(value_layer)
+        value_layer = self.lin_skip_small7(value_layer)
         value_layer = self.layer_norm(value_layer)
-        value_layer = self.lin_skip_small(value_layer)
-        value_layer = self.lin_final(value_layer)
+        value_layer = self.lin_skip_small8(value_layer)
+        value_layer = self.lin_final1(value_layer)
 
 
 
