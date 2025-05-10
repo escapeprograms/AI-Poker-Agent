@@ -52,6 +52,7 @@ class SkipRelu(nn.Module):
         out = out + input
         return out
 
+#Value Network returns 2 things: a value for the state and a regret for the state
 class ValueNetwork(nn.Module):
     def __init__(self, embedding_dim = 64, hidden_size = 192):
         super(ValueNetwork, self).__init__()
@@ -109,15 +110,24 @@ class ValueNetwork(nn.Module):
         bets_layer = self.relu(bets_layer)
         bets_layer = self.lin_skip_small(bets_layer)
 
-        #combine
-        # print("main size", main_layer.shape)
-        main_layer = torch.cat((cards_layer, bets_layer, action_layer), dim=-1) #2 * small layer
-        main_layer = self.merge_main(main_layer)
-        main_layer = self.lin_skip_small(main_layer)
-        main_layer = self.layer_norm(main_layer)
-        main_layer = self.lin_skip_small(main_layer)
-        main_layer = self.lin_final(main_layer)
-        return main_layer #return a single value
+        #combine these components in 2 ways: a value layer and a regret layer
+        regret_layer = torch.cat((cards_layer, bets_layer, action_layer), dim=-1) #2 * small layer
+        regret_layer = self.merge_main(regret_layer)
+        regret_layer = self.lin_skip_small(regret_layer)
+        regret_layer = self.layer_norm(regret_layer)
+        regret_layer = self.lin_skip_small(regret_layer)
+        regret_layer = self.lin_final(regret_layer)
+
+        value_layer = torch.cat((cards_layer, bets_layer, action_layer), dim=-1) #2 * small layer
+        value_layer = self.merge_main(value_layer)
+        value_layer = self.lin_skip_small(value_layer)
+        value_layer = self.layer_norm(value_layer)
+        value_layer = self.lin_skip_small(value_layer)
+        value_layer = self.lin_final(value_layer)
+
+
+
+        return torch.cat((regret_layer, value_layer), dim=-1) #return the value and regret
         
 
 if __name__ == '__main__':

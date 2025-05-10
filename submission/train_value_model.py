@@ -33,7 +33,7 @@ initial_stack = 10000
 verbose_print = False
 
 
-def traverse(training_data, game_state, events, depth=3, value_network = None, training_round = 0):
+def traverse(training_data, game_state, events, value_network = None, training_round = 0):
     cur_player = game_state["next_player"]
     # round_state = events[-1][1]["message"]["round_state"]
     hole_card = game_state['table'].seats.players[cur_player].hole_card
@@ -84,9 +84,9 @@ def traverse(training_data, game_state, events, depth=3, value_network = None, t
         # sample 1 action to traverse, and approximate the rest with the value network
         if i == selected_action or next_state["street"] == Const.Street.FINISHED: #also get the true value if its close
             #since we are getting the opponents expected value, we negate
-            values.append(-traverse(training_data, next_state, events, depth - 1, value_network))
+            values.append(-traverse(training_data, next_state, events, value_network))
         else:
-            values.append(pred_vals[i]) #note: depth is unused
+            values.append(pred_vals[i]) #sample the value network
 
         #DEPRECATED: this was a full tree exploration
         # #stop traversing and approximate at depth 0
@@ -108,14 +108,16 @@ def traverse(training_data, game_state, events, depth=3, value_network = None, t
         print("my policy", policy)
         print("expected value", expected_value)
     
+    #create a training example for each action
     for i, action in enumerate(actions):
         regret = values[i] - expected_value #instantaneous regret
         #add a training example
         inputs = encode_game_state(hole_card, game_state, action, cur_player) #a list of all the things
-        for i, input in enumerate(inputs):
-            training_data[i].append(input)
+        for j, input in enumerate(inputs):
+            training_data[j].append(input)
         
-        training_data[-1].append(torch.tensor(regret, dtype=torch.float))
+        training_data[-2].append(torch.tensor(regret, dtype=torch.float)) #record action regret
+        training_data[-1].append(torch.tensor(values[i], dtype=torch.float)) #record action value
 
 
     #return the expected value at this state
@@ -134,11 +136,11 @@ def simulate(evaluation_function, num_rounds=3200, training_round=0):
         "player2": {"name": "Player 2", "stack": initial_stack},
     }
 
-    training_data = [[] for i in range(10)]
+    training_data = [[] for i in range(11)]
     for K in tqdm(range(num_rounds)):
         initial_game_state = emulator.generate_initial_game_state(players_info)
         game_state, events = emulator.start_new_round(initial_game_state)
-        traverse(training_data, game_state, events, 10, evaluation_function, training_round=training_round)
+        traverse(training_data, game_state, events, evaluation_function, training_round=training_round)
     
     return training_data
     #extract training data from both players
@@ -157,11 +159,11 @@ evaluation_function.to(eval_device)
 
 # simulate(evaluation_function, num_rounds=1, training_round=0)
 
-def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action, values, model, num_epochs=30, batch_size=1):
+def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action, regret, value, model, num_epochs=30, batch_size=1):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     model.to(device)
-    dataset = ValueDataset(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action, values)
+    dataset = ValueDataset(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action, regret, value)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
     # Set the model to training mode
@@ -169,17 +171,18 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("# of training data:", len(dataset))
     for epoch in range(num_epochs):
         running_loss = 0.0
-        for i, (hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action, value) in enumerate(dataloader):
-            hole_suit.to(device)
-            hole_rank.to(device)
-            hole_card_idx.to(device)
-            board_suit.to(device)
-            board_rank.to(device)
-            board_card_idx.to(device)
-            actions_occured.to(device)
-            bet_sizes.to(device)
-            action.to(device)
-            value.to(device)
+        for i, (hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, board_card_idx, actions_occured, bet_sizes, action, regret, value) in enumerate(dataloader):
+            hole_suit = hole_suit.to(device)
+            hole_rank = hole_rank.to(device)
+            hole_card_idx = hole_card_idx.to(device)
+            board_suit = board_suit.to(device)
+            board_rank = board_rank.to(device)
+            board_card_idx = board_card_idx.to(device)
+            actions_occured = actions_occured.to(device)
+            bet_sizes = bet_sizes.to(device)
+            action = action.to(device)
+            regret = regret.to(device)
+            value = value.to(device)
             # Zero the gradients
             optimizer.zero_grad()
 
@@ -189,7 +192,9 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
 
             # Calculate the loss
             value = value.unsqueeze(1) 
-            loss = criterion(predicted_values.to(device), value.to(device))
+            regret = regret.unsqueeze(1)
+            output = torch.cat((regret, value), dim=1)
+            loss = criterion(predicted_values.to(device), output.to(device))
 
             # Backward pass: Compute gradients
             loss.backward()
@@ -206,11 +211,11 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("Finished Training")
 
 #Run self-play to gather data, then train the value function
-num_epochs = 60
+num_epochs = 15
 batch_size = 32
-num_rounds = 8000
+num_rounds = 2000
 
-for j in range(10):
+for j in range(3):
     print("running round", j)
     #re-initialize model after simulating
     
