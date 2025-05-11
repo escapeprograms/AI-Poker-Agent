@@ -1,18 +1,13 @@
 import random
+import sys
 from pypokerengine.api.emulator import Emulator
-from pypokerengine.api.game import setup_config, start_poker
-from pypokerengine.players import BasePokerPlayer
-from pypokerengine.utils.card_utils import gen_cards
-from pypokerengine.utils.game_state_utils import attach_hole_card, attach_hole_card_from_deck, restore_game_state
 from pypokerengine.engine.poker_constants import PokerConstants as Const
 from pypokerengine.engine.round_manager import RoundManager
 from pypokerengine.engine.action_checker import ActionChecker
 from encode_state import encode_game_state
-from minimax_player import MinimaxPlayer
-from raise_player import RaisedPlayer
-from randomplayer import RandomPlayer
 from value_model import ValueNetwork
 from training.value_dataset import ValueDataset
+from training.data_offloader import store_training_data, load_training_data
 
 from CFRD_player import CFRDPlayer
 
@@ -23,16 +18,28 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from tqdm import tqdm
+import gc
+import os
 
+#hyperparameters
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 eval_device = "cpu"
 
-#partial game traversal
+#supervised learning
+num_epochs = 10
+batch_size = 64
+num_rounds = 50000 #number of rounds to simulate per iteration
+num_iterations = 100 # number of self-play and training iterations
+
+save_data_segments = False #
+segment_size = 50000 #how often to save data
+
 initial_stack = 10000
 
 verbose_print = False
 
 
+#partial game traversal
 def traverse(training_data, game_state, events, value_network = None, training_round = 0):
     cur_player = game_state["next_player"]
     # round_state = events[-1][1]["message"]["round_state"]
@@ -88,17 +95,8 @@ def traverse(training_data, game_state, events, value_network = None, training_r
         else:
             values.append(pred_vals[i]) #sample the value network
 
-        #DEPRECATED: this was a full tree exploration
-        # #stop traversing and approximate at depth 0
-        # if depth == 0:
-        #     values.append(pred_vals[i])
-        #     continue
-
-        # #recursively traverse
-        # values.append(traverse(training_data, next_state, events, depth - 1, value_network))
-
     #calculate regret of each action
-    expected_value = np.dot(np.array(policy), np.array(values)) #weighted average of traversed values
+    expected_value = np.dot(np.array(policy), np.array(values)) #weighted average of traversed values (expected counterfactual value)
     
     if verbose_print == True:
         print("I am player", cur_player, "with hole card", str(hole_card[0]), str(hole_card[1]))
@@ -112,7 +110,7 @@ def traverse(training_data, game_state, events, value_network = None, training_r
     for i, action in enumerate(actions):
         regret = values[i] - expected_value #instantaneous regret
         #add a training example
-        inputs = encode_game_state(hole_card, game_state, action, cur_player) #a list of all the things
+        inputs = encode_game_state(hole_card, game_state, action, cur_player, device="cpu") #a list of all the things
         for j, input in enumerate(inputs):
             training_data[j].append(input)
         
@@ -141,7 +139,27 @@ def simulate(evaluation_function, num_rounds=3200, training_round=0):
         initial_game_state = emulator.generate_initial_game_state(players_info)
         game_state, events = emulator.start_new_round(initial_game_state)
         traverse(training_data, game_state, events, evaluation_function, training_round=training_round)
+
+        #save training data in chunks
+        if save_data_segments and K % segment_size == segment_size - 1:
+            store_training_data(training_data, K//segment_size)
+            for data in training_data:
+                del data
+            del training_data
+            gc.collect()
+
+            training_data = [[] for i in range(11)] #reset ram
+            
     
+    if save_data_segments:
+        #add residual training data
+        final_segment = num_rounds//segment_size
+        stored_training_data = load_training_data(final_segment + 1)
+        for i in range(len(training_data)):
+            training_data[i] += stored_training_data[i]
+            del stored_training_data[i] #free memory
+            
+        
     return training_data
     #extract training data from both players
     # hole_suit1, hole_rank1, hole_card_idx1, board_suit1, board_rank1, board_card_idx1, actions_occured1, bet_sizes1 = None
@@ -213,11 +231,8 @@ def train_loop(hole_suit, hole_rank, hole_card_idx, board_suit, board_rank, boar
     print("Finished Training")
 
 #Run self-play to gather data, then train the value function
-num_epochs = 10
-batch_size = 64
-num_rounds = 10000
 
-for j in range(3):
+for j in range(num_iterations):
     print("running round", j)
     #re-initialize model after simulating
     
@@ -240,4 +255,5 @@ for j in range(3):
     #     num_rounds *= 2
 
     #save model
-    torch.save(evaluation_function.state_dict(), f"submission/models/CFR-D_cp{j}_fixed.pth")
+    save_path = os.path.join(os.path.dirname(__file__), f"models/CFR-D_cp{j}.pth")
+    torch.save(evaluation_function.state_dict(), save_path)
